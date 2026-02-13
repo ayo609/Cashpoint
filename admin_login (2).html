@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cashpoint | Admin Login</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    :root {
+      --primary: #007BFF;
+      --secondary: #28A745;
+      --light: #ffffff;
+      --gray: #f8f9fa;
+      --text: #343A40;
+      --danger: #DC3545;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--light);
+      max-width: 400px;
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 5px;
+    }
+
+    .form-container {
+      padding: 30px;
+    }
+
+    .input-group {
+      margin: 15px 0;
+      position: relative;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 5px rgba(0,123,255,0.3);
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: 0.3s;
+    }
+
+    button:hover:not(:disabled) {
+      background: #0056b3;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+      color: var(--text);
+    }
+
+    .back-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Admin Login</h1>
+      <p>Access the control panel</p>
+    </header>
+
+    <div class="form-container">
+      <form id="adminLoginForm">
+        <div class="input-group">
+          <input type="email" id="adminEmail" placeholder="Admin Email" required>
+        </div>
+
+        <div class="input-group">
+          <input type="password" id="adminPassword" placeholder="Password" required>
+          <span class="toggle-password" onclick="togglePassword('adminPassword', this)">👁️</span>
+        </div>
+
+        <button type="button" id="loginBtn" onclick="adminLogin()">Login as Admin</button>
+      </form>
+
+      <div class="back-link">
+        <a href="login.html">Back to User Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+      authDomain: "cashpoint-ac4f4.firebaseapp.com",
+      projectId: "cashpoint-ac4f4",
+      storageBucket: "cashpoint-ac4f4.firebasestorage.app",
+      messagingSenderId: "16133206416",
+      appId: "1:16133206416:web:a093f4e153ad2c9bcc8315"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function togglePassword(id, icon) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+      icon.textContent = input.type === 'password' ? '👁️' : '🙈';
+    }
+
+    async function adminLogin() {
+      const email = document.getElementById('adminEmail').value.trim();
+      const password = document.getElementById('adminPassword').value;
+      const btn = document.getElementById('loginBtn');
+
+      if (!email || !password) {
+        Swal.fire('Error', 'Please fill in all fields', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+
+        // Check if user is admin in Firestore
+        const userDoc = await db.collection('users').doc(cred.user.uid).get();
+        if (!userDoc.exists || !userDoc.data().isAdmin) {
+          auth.signOut();
+          throw new Error('Access denied. You are not an admin.');
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Welcome Admin!',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          window.location.href = 'admin.html';
+        });
+
+      } catch (err) {
+        Swal.fire('Login Failed', err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Login as Admin';
+      }
+    }
+  </script>
+</body>
+</html>
