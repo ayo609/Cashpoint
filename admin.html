@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Admin Panel</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary:       #0052FF;
+    --primary-dark:  #0039b3;
+    --accent:        #00D4A0;
+    --warning:       #FFB800;
+    --danger:        #FF4D6D;
+    --success:       #00C48C;
+    --bg:            #F0F4FF;
+    --card:          #ffffff;
+    --text:          #0D1B3E;
+    --muted:         #6B7A99;
+    --border:        #D8E0F0;
+    --sidebar-w:     240px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ════════ LOGIN GATE ════════ */
+  #loginGate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, var(--primary) 0%, #001c6b 100%);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .login-box {
+    background: white; border-radius: 24px; padding: 36px 32px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    text-align: center;
+  }
+  .login-logo { font-size: 44px; margin-bottom: 10px; }
+  .login-title {
+    font-family: 'Sora', sans-serif; font-size: 22px;
+    font-weight: 700; color: var(--text); margin-bottom: 4px;
+  }
+  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; font-weight: 600; }
+  .login-input {
+    width: 100%; padding: 14px 16px;
+    border: 2px solid var(--border); border-radius: 12px;
+    font-size: 15px; font-family: inherit; color: var(--text);
+    outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+    display: block;
+  }
+  .login-input:focus { border-color: var(--primary); }
+  .login-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    background: var(--primary); color: white;
+    font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+    transition: opacity 0.2s; margin-top: 6px;
+  }
+  .login-btn:hover { opacity: 0.88; }
+  .login-err { color: var(--danger); font-size: 13px; font-weight: 600; margin-top: 8px; display: none; }
+
+  /* ════════ LAYOUT ════════ */
+  #adminApp { display: none; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: white;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 500; transition: transform 0.3s;
+    box-shadow: 4px 0 20px rgba(0,82,255,0.06);
+  }
+  .sidebar-logo {
+    padding: 22px 20px;
+    display: flex; align-items: center; gap: 11px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-logo-icon {
+    width: 38px; height: 38px; background: var(--primary);
+    border-radius: 11px; display: flex; align-items: center;
+    justify-content: center; font-size: 19px; flex-shrink: 0;
+  }
+  .sb-logo-text {
+    font-family: 'Sora', sans-serif; font-size: 16px;
+    font-weight: 700; color: var(--text);
+  }
+  .sb-logo-badge {
+    font-size: 9px; font-weight: 700; background: var(--danger);
+    color: white; border-radius: 4px; padding: 1px 5px; margin-left: 2px;
+  }
+
+  .sidebar-nav { flex: 1; padding: 14px 10px; overflow-y: auto; }
+  .nav-group-label {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 8px 10px 5px; margin-top: 8px;
+  }
+  .sb-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 12px; border-radius: 12px; cursor: pointer;
+    transition: background 0.15s; margin-bottom: 3px; position: relative;
+  }
+  .sb-item:hover { background: var(--bg); }
+  .sb-item.active { background: #E8F0FF; }
+  .sb-item i { font-size: 16px; color: var(--muted); width: 18px; text-align: center; flex-shrink: 0; }
+  .sb-item.active i { color: var(--primary); }
+  .sb-item span { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+  .sb-item.active span { color: var(--primary); font-weight: 700; }
+  .sb-badge {
+    position: absolute; right: 10px;
+    background: var(--danger); color: white;
+    border-radius: 99px; padding: 1px 7px;
+    font-size: 10.5px; font-weight: 700;
+  }
+  .sb-badge.green { background: var(--success); }
+
+  .sidebar-bottom {
+    padding: 14px 10px; border-top: 1px solid var(--border);
+  }
+  .logout-btn {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px; border-radius: 12px; cursor: pointer;
+    transition: background 0.15s; width: 100%; border: none; background: none;
+    font-family: inherit;
+  }
+  .logout-btn:hover { background: #FFF0F3; }
+  .logout-btn i { font-size: 16px; color: var(--danger); }
+  .logout-btn span { font-size: 13.5px; font-weight: 600; color: var(--danger); }
+
+  /* Main area */
+  .main {
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* Top bar */
+  .main-topbar {
+    height: 66px; background: white;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; gap: 14px; position: sticky; top: 0; z-index: 200;
+  }
+  .main-topbar-title {
+    font-family: 'Sora', sans-serif; font-size: 19px;
+    font-weight: 700; color: var(--text);
+  }
+  .topbar-right-items { display: flex; align-items: center; gap: 10px; }
+  .tb-clock { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .hamburger {
+    display: none; width: 36px; height: 36px; border-radius: 10px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    align-items: center; justify-content: center; cursor: pointer; font-size: 15px;
+    color: var(--muted);
+  }
+
+  /* Responsive sidebar */
+  @media(max-width:768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .hamburger { display: flex; }
+    .sidebar-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      z-index: 499; display: none;
+    }
+    .sidebar-overlay.visible { display: block; }
+  }
+
+  /* Content area */
+  .content { padding: 28px; flex: 1; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ════════ STAT CARDS ════════ */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap: 14px; margin-bottom: 28px;
+  }
+  .stat-card {
+    background: white; border-radius: 18px; padding: 20px;
+    box-shadow: 0 4px 16px rgba(0,82,255,0.07);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .stat-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .stat-info {}
+  .stat-num {
+    font-family: 'Sora', sans-serif; font-size: 22px;
+    font-weight: 700; color: var(--text); line-height: 1;
+  }
+  .stat-lbl {
+    font-size: 11.5px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;
+  }
+
+  /* ════════ TABLE CARD ════════ */
+  .table-card {
+    background: white; border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,82,255,0.07);
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .tc-header {
+    padding: 18px 22px;
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .tc-title {
+    font-family: 'Sora', sans-serif; font-size: 16px;
+    font-weight: 700; color: var(--text);
+  }
+  .tc-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tc-filter {
+    padding: 7px 14px; border-radius: 99px; font-size: 12.5px;
+    font-weight: 700; font-family: inherit; cursor: pointer;
+    border: 1.5px solid var(--border); background: white; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .tc-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .tc-filter:hover:not(.active) { background: var(--bg); }
+  .tc-search {
+    padding: 7px 14px; border-radius: 10px; font-size: 12.5px;
+    font-family: inherit; border: 1.5px solid var(--border); outline: none;
+    transition: border-color 0.2s; min-width: 160px;
+  }
+  .tc-search:focus { border-color: var(--primary); }
+  .refresh-icon-btn {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    border: 1.5px solid var(--border); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; font-size: 14px; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .refresh-icon-btn:hover { background: #dde6ff; }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; overflow-x: auto; }
+  .dt-wrap { overflow-x: auto; }
+  .data-table th {
+    text-align: left; padding: 13px 20px;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .data-table td {
+    padding: 13px 20px; font-size: 13.5px; color: var(--text);
+    border-bottom: 1px solid #f0f4ff; vertical-align: middle;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #f8faff; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .badge.pending  { background: #FFF8E8; color: var(--warning); }
+  .badge.approved { background: #E8FFF6; color: var(--success); }
+  .badge.rejected { background: #FFF0F3; color: var(--danger); }
+  .badge.active   { background: #E8FFF6; color: var(--success); }
+  .badge.inactive { background: #F0F4FF; color: var(--muted); }
+
+  /* Action buttons */
+  .action-row { display: flex; gap: 6px; }
+  .act-btn {
+    padding: 6px 13px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    font-family: inherit; cursor: pointer; border: none; transition: opacity 0.2s;
+  }
+  .act-btn:hover { opacity: 0.82; }
+  .act-approve { background: var(--success); color: white; }
+  .act-reject  { background: var(--danger);  color: white; }
+  .act-view    { background: var(--primary); color: white; }
+  .act-credit  { background: var(--warning); color: #0D1B3E; }
+
+  /* Amount cell */
+  .amt-cell { font-family: 'Sora', sans-serif; font-weight: 700; }
+  .amt-cell.green { color: var(--success); }
+  .amt-cell.gold  { color: var(--warning); }
+
+  /* User cell */
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .user-av {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 13px; flex-shrink: 0;
+  }
+  .user-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .user-email { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  /* Empty state */
+  .table-empty {
+    padding: 48px 24px; text-align: center;
+  }
+  .te-emoji { font-size: 46px; margin-bottom: 10px; }
+  .te-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+  .te-sub   { font-size: 13px; color: var(--muted); }
+
+  /* Loading skeleton rows */
+  .skel-row td { padding: 14px 20px; }
+  .skeleton {
+    background: linear-gradient(90deg,#e8edf5 25%,#f4f7fc 50%,#e8edf5 75%);
+    background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 7px; height: 14px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+
+  /* ════════ MODAL ════════ */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(13,27,62,0.5);
+    z-index: 800; display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 22px; padding: 28px;
+    width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+    animation: modalIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes modalIn {
+    from { opacity:0; transform:scale(0.92) translateY(20px); }
+    to   { opacity:1; transform:scale(1) translateY(0); }
+  }
+  .modal-title {
+    font-family: 'Sora', sans-serif; font-size: 18px;
+    font-weight: 700; color: var(--text); margin-bottom: 16px;
+  }
+  .modal-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
+  }
+  .modal-row:last-child { border-bottom: none; }
+  .mr-lbl { font-weight: 600; color: var(--muted); }
+  .mr-val { font-weight: 700; color: var(--text); text-align: right; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-btn {
+    flex: 1; padding: 13px; border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .modal-btn:hover { opacity: 0.85; }
+  .mb-approve { background: var(--success); color: white; }
+  .mb-reject  { background: var(--danger);  color: white; }
+  .mb-cancel  { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); }
+
+  .credit-input-wrap {
+    margin-top: 16px;
+    background: var(--bg); border-radius: 12px; padding: 14px;
+  }
+  .credit-lbl { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+  .credit-input {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 2px solid var(--border); font-size: 16px; font-weight: 700;
+    font-family: inherit; outline: none; transition: border-color 0.2s;
+  }
+  .credit-input:focus { border-color: var(--primary); }
+
+  /* ════════ PAGE-SPECIFIC ════════ */
+  .page-header { margin-bottom: 22px; }
+  .page-header-title {
+    font-family: 'Sora', sans-serif; font-size: 22px;
+    font-weight: 700; color: var(--text); margin-bottom: 4px;
+  }
+  .page-header-sub { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+
+  /* ════════ RESPONSIVE TWEAKS ════════ */
+  @media(max-width:640px) {
+    .content { padding: 16px; }
+    .tc-header { flex-direction: column; align-items: flex-start; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+  }
+  @media(max-width:400px) {
+    .stats-row { grid-template-columns: 1fr; }
+  }
+
+  /* Suspension badge */
+  .badge.suspended { background:#FFF0F3; color:var(--danger); }
+  .badge.active    { background:#E8FFF6; color:var(--success); }
+  .badge.inactive  { background:#F0F4FF; color:var(--muted); }
+
+  /* User drawer overlay */
+  .drawer-overlay {
+    position:fixed;inset:0;z-index:800;
+    background:rgba(13,27,62,0.45);
+    backdrop-filter:blur(4px);
+    display:none;
+  }
+  .drawer-overlay.open { display:block; }
+  .drawer {
+    position:fixed;top:0;right:0;bottom:0;
+    width:min(520px,100vw);
+    background:white;
+    box-shadow:-12px 0 50px rgba(0,82,255,0.12);
+    display:flex;flex-direction:column;
+    transform:translateX(100%);
+    transition:transform .35s cubic-bezier(.16,1,.3,1);
+    z-index:801;
+  }
+  .drawer-overlay.open .drawer { transform:translateX(0); }
+  .drawer-head {
+    padding:20px 24px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:14px;flex-shrink:0;
+  }
+  .drawer-av {
+    width:52px;height:52px;border-radius:16px;
+    background:linear-gradient(135deg,var(--primary),#001c6b);
+    display:flex;align-items:center;justify-content:center;
+    color:white;font-size:22px;font-weight:800;flex-shrink:0;
+  }
+  .drawer-name { font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--text); }
+  .drawer-email { font-size:12px;color:var(--muted);font-weight:600; }
+  .drawer-close {
+    margin-left:auto;width:34px;height:34px;border-radius:10px;
+    background:var(--bg);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;color:var(--muted);flex-shrink:0;
+  }
+  .drawer-tabs {
+    display:flex;border-bottom:1px solid var(--border);
+    padding:0 20px;flex-shrink:0;overflow-x:auto;
+  }
+  .dtab {
+    padding:12px 16px;font-size:13px;font-weight:700;color:var(--muted);
+    border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;
+    transition:color .2s,border-color .2s;
+  }
+  .dtab.active { color:var(--primary);border-color:var(--primary); }
+  .drawer-body { flex:1;overflow-y:auto;padding:20px 24px; }
+  .drawer-body::-webkit-scrollbar{width:4px;}
+  .drawer-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+  /* Drawer info rows */
+  .dinfo-row {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 0;border-bottom:1px solid var(--border);gap:12px;
+  }
+  .dinfo-row:last-child{border-bottom:none;}
+  .dir-lbl{font-size:12px;font-weight:700;color:var(--muted);}
+  .dir-val{font-size:13.5px;font-weight:700;color:var(--text);text-align:right;}
+
+  /* Stat mini in drawer */
+  .dstat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+  .dstat{background:var(--bg);border-radius:13px;padding:12px;text-align:center;}
+  .dstat-val{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:var(--text);line-height:1;margin-bottom:3px;}
+  .dstat-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+
+  /* Drawer action buttons */
+  .drawer-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+  .dact-btn{
+    flex:1;min-width:120px;padding:10px 14px;border:none;border-radius:11px;
+    font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:opacity .2s,transform .15s;
+  }
+  .dact-btn:hover{opacity:.88;transform:translateY(-1px);}
+  .dab-fund    {background:#E8FFF6;color:var(--success);}
+  .dab-deduct  {background:#FFF0F3;color:var(--danger);}
+  .dab-suspend {background:#FFF8E8;color:var(--warning);}
+  .dab-unsuspend{background:#E8FFF6;color:var(--success);}
+  .dab-delete  {background:#FFF0F3;color:var(--danger);border:1.5px solid #ffd0d9;}
+
+  /* Amount input in drawer */
+  .damount-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
+  .damount-input{
+    flex:1;padding:11px 14px;border:2px solid var(--border);border-radius:11px;
+    font-size:15px;font-weight:700;font-family:inherit;outline:none;color:var(--text);
+    transition:border-color .2s;
+  }
+  .damount-input:focus{border-color:var(--primary);}
+  .damount-apply{
+    padding:11px 18px;border:none;border-radius:11px;font-size:13px;font-weight:700;
+    font-family:inherit;cursor:pointer;background:var(--primary);color:white;
+    transition:opacity .2s;white-space:nowrap;
+  }
+  .damount-apply:hover{opacity:.88;}
+
+  /* Drawer history items */
+  .dh-item{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 0;border-bottom:1px solid var(--border);
+  }
+  .dh-item:last-child{border-bottom:none;}
+  .dh-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .dh-icon.pending{background:#FFF8E8;}
+  .dh-icon.approved{background:#E8FFF6;}
+  .dh-icon.rejected{background:#FFF0F3;}
+  .dh-info{flex:1;}
+  .dh-amount{font-size:14px;font-weight:700;color:var(--text);}
+  .dh-date  {font-size:11px;color:var(--muted);font-weight:600;}
+  .dh-badge {
+    padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;
+  }
+  .dh-badge.pending  {background:#FFF8E8;color:var(--warning);}
+  .dh-badge.approved {background:#E8FFF6;color:var(--success);}
+  .dh-badge.rejected {background:#FFF0F3;color:var(--danger);}
+
+  /* Ref tree in drawer */
+  .reftree-item{
+    display:flex;align-items:center;gap:10px;padding:9px 12px;
+    background:var(--bg);border-radius:11px;margin-bottom:6px;
+  }
+  .reftree-av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:800;flex-shrink:0;}
+  .reftree-name{font-size:13px;font-weight:700;color:var(--text);}
+  .reftree-email{font-size:11px;color:var(--muted);}
+  .reftree-badge{margin-left:auto;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:700;}
+  .level-1{background:#E8F0FF;color:var(--primary);}
+  .level-2{background:#E8FFF6;color:var(--success);}
+  .level-3{background:#FFF8E8;color:var(--warning);}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN GATE ══════════ -->
+<div id="loginGate">
+  <div class="login-box">
+    <div class="login-logo">🔐</div>
+    <div class="login-title">Admin Login</div>
+    <div class="login-sub">Cashpoint Control Panel</div>
+    <input class="login-input" type="email"    id="adminEmail"    placeholder="Admin Email" />
+    <input class="login-input" type="password" id="adminPassword" placeholder="Password"
+           style="display:none;" />
+    <button class="login-btn" style="display:none;" onclick="void(0)">
+      <i class="fas fa-sign-in-alt"></i> Login
+    </button>
+    <div class="login-err" id="loginErr">Invalid credentials. Access denied.</div>
+  </div>
+</div>
+
+<!-- ══════════ SIDEBAR OVERLAY (mobile) ══════════ -->
+<div class="sidebar-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+
+<!-- ══════════ ADMIN APP ══════════ -->
+<div id="adminApp">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sb-logo-icon">💰</div>
+      <div>
+        <div class="sb-logo-text">Cashpoint <span class="sb-logo-badge">ADMIN</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-group-label">Overview</div>
+      <div class="sb-item active" onclick="showTab('dashboard', this)">
+        <i class="fas fa-th-large"></i>
+        <span>Dashboard</span>
+      </div>
+
+      <div class="nav-group-label">Finance</div>
+      <div class="sb-item" onclick="showTab('deposits', this)" id="sbDeposits">
+        <i class="fas fa-credit-card"></i>
+        <span>Deposits</span>
+        <span class="sb-badge" id="pendingDepBadge" style="display:none;">0</span>
+      </div>
+      <div class="sb-item" onclick="showTab('withdrawals', this)">
+        <i class="fas fa-money-bill-wave"></i>
+        <span>Withdrawals</span>
+        <span class="sb-badge" id="pendingWdlBadge" style="display:none;">0</span>
+      </div>
+
+      <div class="nav-group-label">Users</div>
+      <div class="sb-item" onclick="showTab('users', this)">
+        <i class="fas fa-users"></i>
+        <span>All Users</span>
+      </div>
+      <div class="sb-item" onclick="showTab('investments', this)">
+        <i class="fas fa-chart-line"></i>
+        <span>Investments</span>
+      </div>
+      <div class="sb-item" onclick="showTab('referrals', this)">
+        <i class="fas fa-sitemap"></i>
+        <span>Referral Bonuses</span>
+      </div>
+      <div class="sb-item" onclick="showTab('roi', this)">
+        <i class="fas fa-coins"></i>
+        <span>ROI Logs</span>
+      </div>
+      <div class="sb-item" onclick="showTab('support', this)">
+        <i class="fas fa-headset"></i>
+        <span>Support Chat</span>
+        <span class="sb-badge green" id="pendingSupportBadge" style="display:none;">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="adminLogout()">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- Top bar -->
+    <div class="main-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="hamburger" onclick="toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </div>
+        <div class="main-topbar-title" id="tabTitle">Dashboard</div>
+      </div>
+      <div class="topbar-right-items">
+        <span class="tb-clock" id="tbClock">--:--</span>
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;" id="adminAvatar">A</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ══ DASHBOARD TAB ══ -->
+      <div class="tab-panel active" id="tab-dashboard">
+        <div class="page-header">
+          <div class="page-header-title">Welcome, Admin 👋</div>
+          <div class="page-header-sub" id="dashGreeting">Loading overview...</div>
+        </div>
+
+        <div class="stats-row" id="dashStats">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#E8F0FF;">👥</div>
+            <div class="stat-info">
+              <div class="stat-num" id="ds-users">—</div>
+              <div class="stat-lbl">Total Users</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#FFF8E8;">⏳</div>
+            <div class="stat-info">
+              <div class="stat-num" id="ds-pending">—</div>
+              <div class="stat-lbl">Pending Deposits</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#E8FFF6;">✅</div>
+            <div class="stat-info">
+              <div class="stat-num" id="ds-approved">—</div>
+              <div class="stat-lbl">Approved Deposits</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#E8F0FF;">📈</div>
+            <div class="stat-info">
+              <div class="stat-num" id="ds-investments">—</div>
+              <div class="stat-lbl">Active Investments</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#E8FFF6;">💰</div>
+            <div class="stat-info">
+              <div class="stat-num" id="ds-totalDeposited">—</div>
+              <div class="stat-lbl">Total Deposited</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#FFF0F3;">🎁</div>
+            <div class="stat-info">
+              <div class="stat-num" id="ds-refBonuses">—</div>
+              <div class="stat-lbl">Referral Bonuses</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent deposits preview -->
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">Recent Pending Deposits</div>
+            <button class="act-btn act-view" onclick="showTab('deposits', document.querySelector('[onclick*=\"deposits\"]'))">
+              View All →
+            </button>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table" id="dashDepTable">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Reference</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dashDepBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ DEPOSITS TAB ══ -->
+      <div class="tab-panel" id="tab-deposits">
+        <div class="page-header">
+          <div class="page-header-title">Deposit Management</div>
+          <div class="page-header-sub">Review, approve and reject user deposit requests</div>
+        </div>
+
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">All Deposits</div>
+            <div class="tc-controls">
+              <button class="tc-filter active" onclick="filterDeposits('all',this)">All</button>
+              <button class="tc-filter" onclick="filterDeposits('pending',this)">Pending</button>
+              <button class="tc-filter" onclick="filterDeposits('approved',this)">Approved</button>
+              <button class="tc-filter" onclick="filterDeposits('rejected',this)">Rejected</button>
+              <div class="refresh-icon-btn" onclick="loadDeposits()" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Reference</th>
+                  <th>Bank</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="depositBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ WITHDRAWALS TAB ══ -->
+      <div class="tab-panel" id="tab-withdrawals">
+        <div class="page-header">
+          <div class="page-header-title">Withdrawal Requests</div>
+          <div class="page-header-sub">Review and process user withdrawals manually</div>
+        </div>
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">All Withdrawals</div>
+            <div class="tc-controls">
+              <button class="tc-filter active" onclick="filterWdl('all',this)">All</button>
+              <button class="tc-filter" onclick="filterWdl('pending',this)">Pending</button>
+              <button class="tc-filter" onclick="filterWdl('approved',this)">Approved</button>
+              <button class="tc-filter" onclick="filterWdl('rejected',this)">Rejected</button>
+              <div class="refresh-icon-btn" onclick="loadWithdrawals()"><i class="fas fa-sync-alt"></i></div>
+            </div>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>User</th><th>Amount</th><th>Bank</th><th>Account</th><th>Ref</th><th>Status</th><th>Date</th><th>Action</th></tr>
+              </thead>
+              <tbody id="wdlBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ USERS TAB ══ -->
+      <div class="tab-panel" id="tab-users">
+        <div class="page-header">
+          <div class="page-header-title">All Users</div>
+          <div class="page-header-sub">View and manage all registered accounts</div>
+        </div>
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">User Accounts</div>
+            <div class="tc-controls">
+              <input class="tc-search" placeholder="Search users..." id="userSearch" oninput="filterUsers(this.value)">
+              <div class="refresh-icon-btn" onclick="loadUsers()" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Balance</th>
+                  <th>Invested</th>
+                  <th>Earnings</th>
+                  <th>Refs</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ INVESTMENTS TAB ══ -->
+      <div class="tab-panel" id="tab-investments">
+        <div class="page-header">
+          <div class="page-header-title">All Investments</div>
+          <div class="page-header-sub">Monitor all active and completed investment plans</div>
+        </div>
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">Investment Records</div>
+            <div class="tc-controls">
+              <button class="tc-filter active" onclick="filterInvs('all',this)">All</button>
+              <button class="tc-filter" onclick="filterInvs('active',this)">Active</button>
+              <button class="tc-filter" onclick="filterInvs('inactive',this)">Completed</button>
+              <div class="refresh-icon-btn" onclick="loadInvestments()"><i class="fas fa-sync-alt"></i></div>
+            </div>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>User</th><th>Plan</th><th>Amount</th><th>Daily ROI</th><th>Status</th><th>Days Left</th><th>Activated</th></tr>
+              </thead>
+              <tbody id="invBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ REFERRALS TAB ══ -->
+      <div class="tab-panel" id="tab-referrals">
+        <div class="page-header">
+          <div class="page-header-title">Referral Bonuses</div>
+          <div class="page-header-sub">All referral bonus payments across all 3 levels</div>
+        </div>
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">Referral Bonus Log</div>
+            <div class="tc-controls">
+              <div class="refresh-icon-btn" onclick="loadReferrals()"><i class="fas fa-sync-alt"></i></div>
+            </div>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Upline</th><th>Buyer</th><th>Plan</th><th>Investment</th><th>Bonus</th><th>Level</th><th>Date</th></tr>
+              </thead>
+              <tbody id="refBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ ROI LOGS TAB ══ -->
+      <div class="tab-panel" id="tab-roi">
+        <div class="page-header">
+          <div class="page-header-title">ROI Credit Logs</div>
+          <div class="page-header-sub">All automatic daily ROI payments credited to users</div>
+        </div>
+        <div class="table-card">
+          <div class="tc-header">
+            <div class="tc-title">ROI Log</div>
+            <div class="tc-controls">
+              <div class="refresh-icon-btn" onclick="loadROILogs()"><i class="fas fa-sync-alt"></i></div>
+            </div>
+          </div>
+          <div class="dt-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>User ID</th><th>Plan</th><th>Amount Credited</th><th>Day #</th><th>Date</th></tr>
+              </thead>
+              <tbody id="roiBody">
+                <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SUPPORT CHAT TAB ══ -->
+      <div class="tab-panel" id="tab-support">
+        <div class="page-header">
+          <div class="page-header-title">Support Chat</div>
+          <div class="page-header-sub">Reply to user support messages</div>
+        </div>
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;height:calc(100vh - 220px);">
+          <!-- Thread list -->
+          <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,82,255,0.07);display:flex;flex-direction:column;">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px;">
+              Conversations <span id="threadCount" style="color:var(--muted);font-weight:600;font-size:12px;"></span>
+            </div>
+            <div id="threadList" style="flex:1;overflow-y:auto;">
+              <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Select a conversation</div>
+            </div>
+          </div>
+          <!-- Chat window -->
+          <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,82,255,0.07);display:flex;flex-direction:column;">
+            <div id="chatWindowHead" style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+              <div style="color:var(--muted);font-size:13px;font-weight:600;">← Select a conversation from the list</div>
+            </div>
+            <div id="chatWindowBody" style="flex:1;overflow-y:auto;padding:16px;background:#F8FAFF;display:flex;flex-direction:column;gap:10px;">
+            </div>
+            <div id="chatWindowFooter" style="padding:12px;border-top:1px solid var(--border);display:none;">
+              <div style="display:flex;gap:8px;">
+                <textarea id="adminReplyInput" placeholder="Type your reply..." rows="2"
+                  style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:12px;font-family:inherit;font-size:14px;resize:none;outline:none;"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminReply();}"></textarea>
+                <button onclick="sendAdminReply()" style="padding:0 20px;background:var(--accent);color:white;border:none;border-radius:12px;font-weight:700;font-family:inherit;cursor:pointer;font-size:14px;">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .content -->
+  </div><!-- end .main -->
+</div><!-- end #adminApp -->
+
+<!-- ══════════ DEPOSIT DETAIL MODAL ══════════ -->
+<div class="modal-overlay" id="depositModal">
+  <div class="modal">
+    <div class="modal-title">💳 Deposit Details</div>
+    <div id="modalContent"></div>
+    <div class="credit-input-wrap" id="creditAmtWrap">
+      <div class="credit-lbl">Credit Amount to User Balance (₦)</div>
+      <input class="credit-input" type="number" id="creditAmtInput" placeholder="Enter amount to credit"/>
+    </div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- ══════════ USER DRAWER ══════════ -->
+<div class="drawer-overlay" id="userDrawer" onclick="closeUserDrawer(event)">
+  <div class="drawer" id="drawerPanel">
+    <!-- Head -->
+    <div class="drawer-head">
+      <div class="drawer-av" id="drawerAv">U</div>
+      <div>
+        <div class="drawer-name" id="drawerName">—</div>
+        <div class="drawer-email" id="drawerEmail">—</div>
+      </div>
+      <button class="drawer-close" onclick="closeUserDrawerDirect()">✕</button>
+    </div>
+    <!-- Tabs -->
+    <div class="drawer-tabs">
+      <div class="dtab active" onclick="switchDrawerTab('overview',this)">Overview</div>
+      <div class="dtab" onclick="switchDrawerTab('balance',this)">Balance</div>
+      <div class="dtab" onclick="switchDrawerTab('deposits',this)">Deposits</div>
+      <div class="dtab" onclick="switchDrawerTab('withdrawals',this)">Withdrawals</div>
+      <div class="dtab" onclick="switchDrawerTab('investments',this)">Plans</div>
+      <div class="dtab" onclick="switchDrawerTab('referrals',this)">Referrals</div>
+      <div class="dtab" onclick="switchDrawerTab('danger',this)">⚠️ Danger</div>
+    </div>
+    <!-- Body -->
+    <div class="drawer-body" id="drawerBody">
+      <div style="text-align:center;padding:40px;color:var(--muted);">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCRIPT ══════════ -->
+<script>
+
+/* ══════════════════════════════════
+   FIREBASE INIT
+══════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ══════════════════════════════════
+   ADMIN AUTH — secured via Firestore
+   isAdmin flag, NOT email whitelist.
+   Unauthenticated users are redirected
+   to admin-login.html immediately.
+══════════════════════════════════ */
+
+/* ══════════════════════════════════
+   STATE
+══════════════════════════════════ */
+let allDeposits    = [];
+let allUsers       = [];
+let allInvData     = [];
+let depFilter      = 'all';
+let invFilter      = 'all';
+let activeDepDocId = null;
+let activeUserId   = null;
+
+/* ── Clock ── */
+function tickClock() {
+  document.getElementById('tbClock').textContent =
+    new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+/* ── Formatters ── */
+function fmtN(n)    { return '₦' + Number(n||0).toLocaleString('en-NG'); }
+function fmtShort(n) {
+  const v = Number(n||0);
+  if (v >= 1_000_000) return '₦' + (v/1_000_000).toFixed(2)+'M';
+  if (v >= 1_000)     return '₦' + (v/1_000).toFixed(1)+'K';
+  return fmtN(v);
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('en-NG', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  } catch(e) { return '—'; }
+}
+function fmtDateShort(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('en-NG', { day:'2-digit', month:'short', year:'numeric' });
+  } catch(e) { return '—'; }
+}
+function initial(name) {
+  return (name || 'U').charAt(0).toUpperCase();
+}
+
+/* ══════════════════════════════════
+   ADMIN LOGIN
+══════════════════════════════════ */
+/* ── Verify isAdmin flag in Firestore ── */
+async function checkIsAdmin(uid) {
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    return snap.exists && snap.data().isAdmin === true;
+  } catch(e) { return false; }
+}
+
+function showAdminApp(user) {
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('adminApp').style.display  = 'block';
+  const name = user.displayName || user.email || 'Admin';
+  document.getElementById('adminAvatar').textContent = name.charAt(0).toUpperCase();
+  loadDashboard();
+}
+
+function adminLogout() {
+  Swal.fire({
+    title: 'Sign Out?',
+    text: 'You will be redirected to the admin login page.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sign Out',
+    confirmButtonColor: '#FF4D6D',
+    cancelButtonColor: '#6B7A99'
+  }).then(r => {
+    if (r.isConfirmed) {
+      auth.signOut().then(() => {
+        window.location.href = 'admin-login.html';
+      });
+    }
+  });
+}
+
+/* ── Auth guard — runs on every page load ── */
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    /* Not logged in — send to admin login */
+    window.location.href = 'admin-login.html';
+    return;
+  }
+  /* Logged in — verify isAdmin flag in Firestore */
+  const isAdm = await checkIsAdmin(user.uid);
+  if (!isAdm) {
+    /* Logged in but not admin — boot them out */
+    await auth.signOut();
+    window.location.href = 'admin-login.html';
+    return;
+  }
+  /* All good — show the panel */
+  showAdminApp(user);
+});
+
+/* ══════════════════════════════════
+   SIDEBAR / TABS
+══════════════════════════════════ */
+let activeTab = 'dashboard';
+
+function showTab(name, clickedEl) {
+  activeTab = name;
+
+  /* Hide all panels */
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+
+  /* Show target */
+  const panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  if (clickedEl) clickedEl.classList.add('active');
+
+  const titles = {
+    dashboard:'Dashboard', deposits:'Deposit Management',
+    withdrawals:'Withdrawal Requests', users:'All Users',
+    investments:'Investments', referrals:'Referral Bonuses', roi:'ROI Logs', support:'Support Chat'
+  };
+  document.getElementById('tabTitle').textContent = titles[name] || name;
+
+  /* Load data for tab */
+  if (name === 'dashboard')   loadDashboard();
+  if (name === 'deposits')    loadDeposits();
+  if (name === 'withdrawals') loadWithdrawals();
+  if (name === 'users')       loadUsers();
+  if (name === 'investments') loadInvestments();
+  if (name === 'referrals')   loadReferrals();
+  if (name === 'roi')         loadROILogs();
+  if (name === 'support')     loadSupportThreads();
+
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sbOverlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('visible');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('visible');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+/* ══════════════════════════════════
+   LOAD DASHBOARD
+══════════════════════════════════ */
+async function loadDashboard() {
+  try {
+    const [usersSnap, depositsSnap, invSnap, refSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('deposits').get(),
+      db.collection('investments').where('active','==',true).get(),
+      db.collection('referral_bonuses').get()
+    ]);
+
+    const pending  = depositsSnap.docs.filter(d => d.data().status === 'pending');
+    const approved = depositsSnap.docs.filter(d => d.data().status === 'approved');
+    const totalDep = approved.reduce((s,d) => s + Number(d.data().amount||0), 0);
+    const totalRef = refSnap.docs.reduce((s,d) => s + Number(d.data().bonusAmount||0), 0);
+
+    document.getElementById('ds-users').textContent       = usersSnap.size;
+    document.getElementById('ds-pending').textContent     = pending.length;
+    document.getElementById('ds-approved').textContent    = approved.length;
+    document.getElementById('ds-investments').textContent = invSnap.size;
+    document.getElementById('ds-totalDeposited').textContent = fmtShort(totalDep);
+    document.getElementById('ds-refBonuses').textContent  = fmtShort(totalRef);
+
+    document.getElementById('dashGreeting').textContent =
+      `${usersSnap.size} users · ${pending.length} pending deposits · ${invSnap.size} active plans`;
+
+    /* Update sidebar deposit pending badge */
+    const badge = document.getElementById('pendingDepBadge');
+    if (pending.length > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = pending.length;
+    } else {
+      badge.style.display = 'none';
+    }
+
+    /* Update sidebar withdrawal pending badge */
+    try {
+      const wdlSnap = await db.collection('withdrawals').where('status','==','pending').get();
+      const wdlBadge = document.getElementById('pendingWdlBadge');
+      if (wdlBadge) {
+        wdlBadge.style.display = wdlSnap.size > 0 ? 'inline' : 'none';
+        wdlBadge.textContent   = wdlSnap.size;
+      }
+    } catch(e) {}
+
+    /* Recent pending deposits in dashboard table */
+    const body = document.getElementById('dashDepBody');
+    body.innerHTML = '';
+    if (pending.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No pending deposits 🎉</td></tr>';
+    } else {
+      pending.slice(0, 8).forEach(doc => {
+        const d = doc.data();
+        body.appendChild(buildDepositRow(doc.id, d, true));
+      });
+    }
+
+  } catch(err) {
+    console.error('Dashboard load error:', err);
+  }
+}
+
+/* ══════════════════════════════════
+   LOAD DEPOSITS
+══════════════════════════════════ */
+async function loadDeposits() {
+  try {
+    const snap = await db.collection('deposits')
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get();
+    allDeposits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderDeposits();
+  } catch(err) {
+    console.error('Deposits load error:', err);
+  }
+}
+
+function filterDeposits(status, btn) {
+  depFilter = status;
+  document.querySelectorAll('.tc-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDeposits();
+}
+
+function renderDeposits() {
+  const body = document.getElementById('depositBody');
+  body.innerHTML = '';
+
+  const filtered = depFilter === 'all'
+    ? allDeposits
+    : allDeposits.filter(d => d.status === depFilter);
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<tr><td colspan="7"><div class="table-empty"><div class="te-emoji">📭</div><div class="te-title">No ${depFilter} deposits</div></div></td></tr>`;
+    return;
+  }
+
+  filtered.forEach(dep => {
+    body.appendChild(buildDepositRow(dep.id, dep, false));
+  });
+}
+
+function buildDepositRow(docId, d, compact) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <div class="user-cell">
+        <div class="user-av">${initial(d.userName)}</div>
+        <div>
+          <div class="user-name">${d.userName || 'Unknown'}</div>
+          <div class="user-email">${d.userEmail || ''}</div>
+        </div>
+      </div>
+    </td>
+    <td><span class="amt-cell green">${fmtN(d.amount)}</span></td>
+    <td><code style="font-size:12px;background:var(--bg);padding:3px 8px;border-radius:6px;">${d.refCode||'—'}</code></td>
+    ${compact ? '' : `<td>${d.bankName||'PalmPay'}</td>`}
+    ${compact ? '' : `<td><span class="badge ${d.status||'pending'}">${d.status||'pending'}</span></td>`}
+    <td style="font-size:12px;color:var(--muted);">${fmtDate(d.createdAt)}</td>
+    <td>
+      <div class="action-row">
+        ${d.status === 'pending' ? `
+          <button class="act-btn act-approve" onclick="openDepositModal('${docId}')">Review</button>
+        ` : `
+          <button class="act-btn act-view" onclick="openDepositModal('${docId}')">View</button>
+        `}
+      </div>
+    </td>
+  `;
+  return tr;
+}
+
+/* ══════════════════════════════════
+   DEPOSIT MODAL
+══════════════════════════════════ */
+async function openDepositModal(docId) {
+  activeDepDocId = docId;
+  const snap = await db.collection('deposits').doc(docId).get();
+  if (!snap.exists) return;
+  const d = snap.data();
+
+  /* Pre-fill credit amount with deposit amount */
+  document.getElementById('creditAmtInput').value = d.amount || '';
+
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-row"><span class="mr-lbl">User Name</span><span class="mr-val">${d.userName||'—'}</span></div>
+    <div class="modal-row"><span class="mr-lbl">User Email</span><span class="mr-val">${d.userEmail||'—'}</span></div>
+    <div class="modal-row"><span class="mr-lbl">Amount</span><span class="mr-val" style="color:var(--success);font-size:18px;">${fmtN(d.amount)}</span></div>
+    <div class="modal-row"><span class="mr-lbl">Reference</span><span class="mr-val" style="color:var(--primary);">${d.refCode||'—'}</span></div>
+    <div class="modal-row"><span class="mr-lbl">Bank</span><span class="mr-val">${d.bankName||'PalmPay'}</span></div>
+    <div class="modal-row"><span class="mr-lbl">Account</span><span class="mr-val">${d.accountNumber||'—'}</span></div>
+    <div class="modal-row"><span class="mr-lbl">Status</span><span class="mr-val"><span class="badge ${d.status}">${d.status}</span></span></div>
+    <div class="modal-row"><span class="mr-lbl">Submitted</span><span class="mr-val">${fmtDate(d.createdAt)}</span></div>
+    <div class="modal-row"><span class="mr-lbl">Deposit ID</span><span class="mr-val" style="font-size:11px;color:var(--muted);">${docId}</span></div>
+  `;
+
+  const actions = document.getElementById('modalActions');
+  if (d.status === 'pending') {
+    actions.innerHTML = `
+      <button class="modal-btn mb-approve" onclick="approveDeposit('${docId}','${d.userId}')">✅ Approve & Credit</button>
+      <button class="modal-btn mb-reject"  onclick="rejectDeposit('${docId}')">❌ Reject</button>
+      <button class="modal-btn mb-cancel"  onclick="closeModal('depositModal')">Cancel</button>
+    `;
+    document.getElementById('creditAmtWrap').style.display = 'block';
+  } else {
+    actions.innerHTML = `
+      <button class="modal-btn mb-cancel" onclick="closeModal('depositModal')">Close</button>
+    `;
+    document.getElementById('creditAmtWrap').style.display = 'none';
+  }
+
+  document.getElementById('depositModal').classList.add('open');
+}
+
+async function approveDeposit(docId, userId) {
+  const creditAmt = parseFloat(document.getElementById('creditAmtInput').value);
+  if (!creditAmt || creditAmt <= 0) {
+    Swal.fire({ icon:'warning', title:'Enter Credit Amount', text:'Please enter the amount to credit to the user.', confirmButtonColor:'#0052FF' });
+    return;
+  }
+
+  const confirm = await Swal.fire({
+    icon: 'question',
+    title: `Approve & Credit ${fmtN(creditAmt)}?`,
+    text: `This will add ${fmtN(creditAmt)} to the user's balance and mark the deposit as approved.`,
+    showCancelButton: true,
+    confirmButtonText: '✅ Yes, Approve',
+    confirmButtonColor: '#00C48C',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!confirm.isConfirmed) return;
+
+  try {
+    Swal.fire({ title:'Processing...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+
+    await db.runTransaction(async (tx) => {
+      const userRef = db.collection('users').doc(userId);
+      const depRef  = db.collection('deposits').doc(docId);
+      const uSnap   = await tx.get(userRef);
+
+      if (uSnap.exists) {
+        tx.update(userRef, {
+          balance:          firebase.firestore.FieldValue.increment(creditAmt),
+          totalDeposited:   firebase.firestore.FieldValue.increment(creditAmt)
+        });
+      }
+
+      tx.update(depRef, {
+        status:     'approved',
+        creditedAmt: creditAmt,
+        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    closeModal('depositModal');
+    await loadDeposits();
+    await loadDashboard();
+
+    Swal.fire({
+      icon:'success', title:'Deposit Approved!',
+      text:`${fmtN(creditAmt)} has been credited to the user's balance.`,
+      timer:2500, showConfirmButton:false
+    });
+
+  } catch(err) {
+    console.error('Approve error:', err);
+    Swal.fire({ icon:'error', title:'Failed', text:err.message, confirmButtonColor:'#0052FF' });
+  }
+}
+
+async function rejectDeposit(docId) {
+  const confirm = await Swal.fire({
+    icon: 'warning',
+    title: 'Reject this deposit?',
+    text: 'The deposit will be marked as rejected and the user will not be credited.',
+    showCancelButton: true,
+    confirmButtonText: '❌ Yes, Reject',
+    confirmButtonColor: '#FF4D6D',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!confirm.isConfirmed) return;
+
+  await db.collection('deposits').doc(docId).update({
+    status:     'rejected',
+    updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  closeModal('depositModal');
+  await loadDeposits();
+  await loadDashboard();
+
+  Swal.fire({ icon:'info', title:'Deposit Rejected', timer:2000, showConfirmButton:false });
+}
+
+/* ══════════════════════════════════
+   LOAD USERS
+══════════════════════════════════ */
+async function loadUsers() {
+  try {
+    const snap = await db.collection('users').get();
+    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => {
+        const at = a.createdAt ? a.createdAt.toMillis() : 0;
+        const bt = b.createdAt ? b.createdAt.toMillis() : 0;
+        return bt - at;
+      });
+    renderUsers(allUsers);
+  } catch(err) { console.error('Users load error:', err); }
+}
+
+function filterUsers(q) {
+  const filtered = q
+    ? allUsers.filter(u =>
+        (u.fullName||'').toLowerCase().includes(q.toLowerCase()) ||
+        (u.email||'').toLowerCase().includes(q.toLowerCase()) ||
+        (u.username||'').toLowerCase().includes(q.toLowerCase()) ||
+        (u.phone||'').includes(q))
+    : allUsers;
+  renderUsers(filtered);
+}
+
+function renderUsers(list) {
+  const body = document.getElementById('usersBody');
+  body.innerHTML = '';
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="te-emoji">👥</div><div class="te-title">No users found</div></div></td></tr>`;
+    return;
+  }
+  list.forEach(u => {
+    const isSuspended = u.suspended === true;
+    const statusBadge = isSuspended
+      ? `<span class="badge suspended">Suspended</span>`
+      : `<span class="badge active">Active</span>`;
+    const tr = document.createElement('tr');
+    if (isSuspended) tr.style.opacity = '0.7';
+    tr.innerHTML = `
+      <td>
+        <div class="user-cell">
+          <div class="user-av">${initial(u.fullName||u.username)}</div>
+          <div>
+            <div class="user-name">${u.fullName||u.username||'—'}</div>
+            <div class="user-email">${u.email||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="amt-cell green">${fmtShort(u.balance)}</span></td>
+      <td><span class="amt-cell">${fmtShort(u.totalInvested)}</span></td>
+      <td><span class="amt-cell gold">${fmtShort(u.totalEarnings)}</span></td>
+      <td>${u.referralCount||0}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDateShort(u.createdAt)}</td>
+      <td><button class="act-btn act-credit" onclick="openUserDrawer('${u.id}')">Manage</button></td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   USER DRAWER — full management panel
+══════════════════════════════════════════════ */
+let drawerUserId   = null;
+let drawerUserData = null;
+let currentDrawerTab = 'overview';
+
+function openUserDrawer(uid) {
+  drawerUserId   = uid;
+  drawerUserData = allUsers.find(u => u.id === uid) || {};
+  currentDrawerTab = 'overview';
+  const u = drawerUserData;
+
+  /* Set header */
+  document.getElementById('drawerAv').textContent    = initial(u.fullName||u.username);
+  document.getElementById('drawerName').textContent  = u.fullName || u.username || '—';
+  document.getElementById('drawerEmail').textContent = u.email || '—';
+
+  /* Reset tabs */
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.dtab').classList.add('active');
+
+  /* Open drawer */
+  document.getElementById('userDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  /* Load overview */
+  loadDrawerTab('overview');
+}
+
+function closeUserDrawer(e) {
+  if (e.target === document.getElementById('userDrawer')) closeUserDrawerDirect();
+}
+function closeUserDrawerDirect() {
+  document.getElementById('userDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function switchDrawerTab(tab, el) {
+  currentDrawerTab = tab;
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadDrawerTab(tab);
+}
+
+async function loadDrawerTab(tab) {
+  const body = document.getElementById('drawerBody');
+  const u    = drawerUserData;
+  const uid  = drawerUserId;
+
+  body.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+
+  if (tab === 'overview') {
+    body.innerHTML = `
+      <div class="dstat-row">
+        <div class="dstat"><div class="dstat-val">${fmtShort(u.balance)}</div><div class="dstat-lbl">Balance</div></div>
+        <div class="dstat"><div class="dstat-val">${fmtShort(u.totalEarnings)}</div><div class="dstat-lbl">Earned</div></div>
+        <div class="dstat"><div class="dstat-val">${u.referralCount||0}</div><div class="dstat-lbl">Referrals</div></div>
+      </div>
+      <div class="dinfo-row"><span class="dir-lbl">Full Name</span><span class="dir-val">${u.fullName||'—'}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Username</span><span class="dir-val">@${u.username||'—'}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Email</span><span class="dir-val">${u.email||'—'}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Phone</span><span class="dir-val">${u.phone||'—'}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Referral Code</span><span class="dir-val">${u.referralCode||'—'}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Referred By</span><span class="dir-val">${u.referredBy||'Direct'}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Total Invested</span><span class="dir-val">${fmtN(u.totalInvested)}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Ref Earnings</span><span class="dir-val">${fmtN(u.totalRefEarnings)}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">Status</span><span class="dir-val">${u.suspended ? '🔴 Suspended' : '🟢 Active'}</span></div>
+      ${u.suspendedUntil ? `<div class="dinfo-row"><span class="dir-lbl">Suspended Until</span><span class="dir-val">${fmtDate(u.suspendedUntil)}</span></div>` : ''}
+      <div class="dinfo-row"><span class="dir-lbl">Joined</span><span class="dir-val">${fmtDate(u.createdAt)}</span></div>
+      <div class="dinfo-row"><span class="dir-lbl">User ID</span><span class="dir-val" style="font-size:10px;color:var(--muted);">${u.id}</span></div>
+    `;
+
+  } else if (tab === 'balance') {
+    body.innerHTML = `
+      <div class="dstat-row">
+        <div class="dstat"><div class="dstat-val" style="color:var(--success);">${fmtShort(u.balance)}</div><div class="dstat-lbl">Current Balance</div></div>
+        <div class="dstat"><div class="dstat-val">${fmtShort(u.totalInvested)}</div><div class="dstat-lbl">Total Invested</div></div>
+        <div class="dstat"><div class="dstat-val">${fmtShort(u.totalEarnings)}</div><div class="dstat-lbl">Total Earned</div></div>
+      </div>
+
+      <div style="background:#E8FFF6;border-radius:13px;padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--success);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">💚 Fund Account</div>
+        <div class="damount-row">
+          <input class="damount-input" type="number" id="fundInput" placeholder="Amount to add (₦)" min="1"/>
+          <button class="damount-apply" style="background:var(--success);" onclick="fundUser()">Add Funds</button>
+        </div>
+        <div style="font-size:11px;color:var(--success);font-weight:600;">This will credit the user's balance immediately.</div>
+      </div>
+
+      <div style="background:#FFF0F3;border-radius:13px;padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">❌ Deduct Balance</div>
+        <div class="damount-row">
+          <input class="damount-input" type="number" id="deductInput" placeholder="Amount to deduct (₦)" min="1"/>
+          <button class="damount-apply" style="background:var(--danger);" onclick="deductUser()">Deduct</button>
+        </div>
+        <div style="font-size:11px;color:var(--danger);font-weight:600;">This will deduct from the user's balance. Balance cannot go below ₦0.</div>
+      </div>
+
+      <div style="background:#F0F4FF;border-radius:13px;padding:14px 16px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">📝 Admin Note (optional)</div>
+        <textarea id="adminNoteInput" placeholder="Reason for adjustment (saved to logs)" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:13px;resize:none;outline:none;height:68px;"></textarea>
+      </div>
+    `;
+
+  } else if (tab === 'deposits') {
+    try {
+      const snap = await db.collection('deposits').where('userId','==',uid).get();
+      const docs = snap.docs.sort((a,b) => {
+        const at = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+        const bt = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+        return bt - at;
+      });
+      if (docs.length === 0) {
+        body.innerHTML = `<div class="table-empty"><div class="te-emoji">📭</div><div class="te-title">No deposits yet</div></div>`;
+        return;
+      }
+      const iconMap  = {pending:'⏳',approved:'✅',rejected:'❌'};
+      const labelMap = {pending:'Pending',approved:'Approved',rejected:'Rejected'};
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;">${docs.length} deposit record${docs.length!==1?'s':''}</div>`;
+      docs.forEach(doc => {
+        const d = doc.data();
+        const st = d.status||'pending';
+        html += `
+          <div class="dh-item">
+            <div class="dh-icon ${st}">${iconMap[st]||'💰'}</div>
+            <div class="dh-info">
+              <div class="dh-amount">${fmtN(d.amount)}</div>
+              <div class="dh-date">${fmtDate(d.createdAt)} · ${d.refCode||''}</div>
+              ${d.transferRef ? `<div class="dh-date">Ref: ${d.transferRef}</div>` : ''}
+            </div>
+            <span class="dh-badge ${st}">${labelMap[st]}</span>
+          </div>`;
+      });
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML = `<div style="color:var(--danger);padding:20px;">Error loading deposits: ${e.message}</div>`; }
+
+  } else if (tab === 'withdrawals') {
+    try {
+      const snap = await db.collection('withdrawals').where('userId','==',uid).get();
+      const docs = snap.docs.sort((a,b) => {
+        const at = a.data().requestedAt ? a.data().requestedAt.toMillis() : 0;
+        const bt = b.data().requestedAt ? b.data().requestedAt.toMillis() : 0;
+        return bt - at;
+      });
+      if (docs.length === 0) {
+        body.innerHTML = `<div class="table-empty"><div class="te-emoji">📭</div><div class="te-title">No withdrawals yet</div></div>`;
+        return;
+      }
+      const iconMap  = {pending:'⏳',approved:'✅',rejected:'❌'};
+      const labelMap = {pending:'Pending',approved:'Approved',rejected:'Rejected'};
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;">${docs.length} withdrawal record${docs.length!==1?'s':''}</div>`;
+      docs.forEach(doc => {
+        const d = doc.data();
+        const st = d.status||'pending';
+        html += `
+          <div class="dh-item">
+            <div class="dh-icon ${st}">${iconMap[st]||'💸'}</div>
+            <div class="dh-info">
+              <div class="dh-amount">${fmtN(d.amount)}</div>
+              <div class="dh-date">${fmtDate(d.requestedAt)} · ${d.refCode||''}</div>
+              <div class="dh-date">${d.bankName||''} · ${d.accountName||''} · ${d.accountNumber||''}</div>
+            </div>
+            <span class="dh-badge ${st}">${labelMap[st]}</span>
+          </div>`;
+      });
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML = `<div style="color:var(--danger);padding:20px;">Error loading withdrawals: ${e.message}</div>`; }
+
+  } else if (tab === 'investments') {
+    try {
+      const snap = await db.collection('investments').where('userId','==',uid).get();
+      const docs = snap.docs.sort((a,b) => {
+        const at = a.data().activationTime ? a.data().activationTime.toMillis() : 0;
+        const bt = b.data().activationTime ? b.data().activationTime.toMillis() : 0;
+        return bt - at;
+      });
+      if (docs.length === 0) {
+        body.innerHTML = `<div class="table-empty"><div class="te-emoji">📈</div><div class="te-title">No investments yet</div></div>`;
+        return;
+      }
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;">${docs.length} investment record${docs.length!==1?'s':''}</div>`;
+      docs.forEach(doc => {
+        const d = doc.data();
+        const daysPassed = d.activationTime ? Math.floor((Date.now() - d.activationTime.toMillis()) / 86400000) : 0;
+        const daysLeft   = Math.max(0, (d.durationDays||30) - daysPassed);
+        const pct        = Math.min(100, Math.round(daysPassed / (d.durationDays||30) * 100));
+        html += `
+          <div style="background:var(--bg);border-radius:13px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:14px;font-weight:700;">${d.planName||'—'}</div>
+              <span class="badge ${d.active?'active':'inactive'}">${d.active?'Active':'Done'}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:12px;">
+              <div><span style="color:var(--muted);">Invested:</span> <b>${fmtN(d.amount)}</b></div>
+              <div><span style="color:var(--muted);">Daily ROI:</span> <b>${fmtN(d.dailyROI)}</b></div>
+              <div><span style="color:var(--muted);">Days Left:</span> <b>${daysLeft}d</b></div>
+              <div><span style="color:var(--muted);">Total Return:</span> <b>${fmtN(d.totalReturn)}</b></div>
+            </div>
+            <div style="height:5px;background:var(--border);border-radius:99px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:99px;"></div>
+            </div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:4px;font-weight:600;">${pct}% complete · ${fmtDate(d.activationTime)}</div>
+          </div>`;
+      });
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML = `<div style="color:var(--danger);padding:20px;">Error loading plans: ${e.message}</div>`; }
+
+  } else if (tab === 'referrals') {
+    try {
+      /* Level 1 referrals */
+      const l1snap = await db.collection('users').where('referrerUid','==',uid).get();
+      const l1users = l1snap.docs.map(d => ({id:d.id,...d.data()}));
+
+      if (l1users.length === 0) {
+        body.innerHTML = `<div class="table-empty"><div class="te-emoji">👥</div><div class="te-title">No referrals yet</div></div>`;
+        return;
+      }
+
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;">${l1users.length} Level 1 referral${l1users.length!==1?'s':''}</div>`;
+
+      for (const l1 of l1users) {
+        html += `
+          <div class="reftree-item">
+            <div class="reftree-av">${initial(l1.fullName||l1.username)}</div>
+            <div>
+              <div class="reftree-name">${l1.fullName||l1.username||'—'}</div>
+              <div class="reftree-email">${l1.email||'—'} · Invested: ${fmtShort(l1.totalInvested)}</div>
+            </div>
+            <span class="reftree-badge level-1">L1</span>
+          </div>`;
+
+        /* Level 2 */
+        const l2snap = await db.collection('users').where('referrerUid','==',l1.id).get();
+        for (const l2doc of l2snap.docs) {
+          const l2 = l2doc.data();
+          html += `
+            <div class="reftree-item" style="margin-left:20px;">
+              <div class="reftree-av" style="background:linear-gradient(135deg,var(--accent),var(--accent-dark));">${initial(l2.fullName||l2.username)}</div>
+              <div>
+                <div class="reftree-name">${l2.fullName||l2.username||'—'}</div>
+                <div class="reftree-email">${l2.email||'—'} · Invested: ${fmtShort(l2.totalInvested)}</div>
+              </div>
+              <span class="reftree-badge level-2">L2</span>
+            </div>`;
+        }
+      }
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML = `<div style="color:var(--danger);padding:20px;">Error: ${e.message}</div>`; }
+
+  } else if (tab === 'danger') {
+    const u = drawerUserData;
+    const isSuspended = u.suspended === true;
+    body.innerHTML = `
+      <div style="background:#FFF8E8;border-radius:13px;padding:16px;margin-bottom:14px;border:1.5px solid #ffe0a0;">
+        <div style="font-size:13px;font-weight:700;color:#856404;margin-bottom:10px;">⏸️ Suspend / Unsuspend Account</div>
+        <div style="font-size:12px;color:#856404;margin-bottom:12px;">
+          Suspended users cannot log in or access the platform. Active investments continue to run.
+        </div>
+        ${isSuspended ? `
+          <div style="font-size:12px;color:var(--danger);font-weight:700;margin-bottom:10px;">🔴 Currently suspended${u.suspendReason ? ': ' + u.suspendReason : ''}</div>
+          <button class="dact-btn dab-unsuspend" style="width:100%;" onclick="unsuspendUser()">
+            <i class="fas fa-lock-open"></i> Lift Suspension
+          </button>
+        ` : `
+          <div style="margin-bottom:10px;">
+            <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">Suspend for:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+              <button onclick="suspendUser(1)" style="padding:7px 14px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">1 Day</button>
+              <button onclick="suspendUser(3)" style="padding:7px 14px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">3 Days</button>
+              <button onclick="suspendUser(7)" style="padding:7px 14px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">7 Days</button>
+              <button onclick="suspendUser(14)" style="padding:7px 14px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">14 Days</button>
+              <button onclick="suspendUser(30)" style="padding:7px 14px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">30 Days</button>
+              <button onclick="suspendUser(99999)" style="padding:7px 14px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">Permanent</button>
+            </div>
+            <input id="suspendReasonInput" placeholder="Reason (optional)" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;outline:none;"/>
+          </div>
+        `}
+      </div>
+
+      <div style="background:#FFF0F3;border-radius:13px;padding:16px;border:1.5px solid #ffd0d9;">
+        <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">🗑️ Delete Account</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;">
+          <b style="color:var(--danger);">Warning:</b> This permanently deletes the user's Firestore data.
+          Their Firebase Auth account will remain but they won't have a profile.
+          This action cannot be undone.
+        </div>
+        <button class="dact-btn dab-delete" style="width:100%;" onclick="deleteUser()">
+          <i class="fas fa-trash"></i> Permanently Delete Account
+        </button>
+      </div>
+    `;
+  }
+}
+
+/* ── Fund user account ── */
+async function fundUser() {
+  const amount = parseFloat(document.getElementById('fundInput').value) || 0;
+  const note   = document.getElementById('adminNoteInput')?.value?.trim() || '';
+  if (amount <= 0) { Swal.fire({icon:'warning',title:'Enter a valid amount',confirmButtonColor:'#0052FF'}); return; }
+  const res = await Swal.fire({
+    icon:'question',
+    title:`Add ${fmtN(amount)} to balance?`,
+    html:`<div style="font-size:13px;color:var(--muted);">User: <b>${drawerUserData.fullName||drawerUserData.username}</b><br>New balance: <b>${fmtN((drawerUserData.balance||0)+amount)}</b></div>`,
+    showCancelButton:true, confirmButtonText:'Yes, Fund', confirmButtonColor:'#00C48C', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(drawerUserId).update({
+      balance: firebase.firestore.FieldValue.increment(amount)
+    });
+    await db.collection('admin_actions').add({
+      action:'fund', userId:drawerUserId, amount, note,
+      adminUid: auth.currentUser?.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    drawerUserData.balance = (drawerUserData.balance||0) + amount;
+    const idx = allUsers.findIndex(u => u.id === drawerUserId);
+    if (idx !== -1) allUsers[idx].balance = drawerUserData.balance;
+    document.getElementById('fundInput').value = '';
+    Swal.fire({icon:'success',title:'Balance Funded!',text:`₦${amount.toLocaleString()} added.`,timer:2000,showConfirmButton:false});
+    renderUsers(allUsers);
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ── Deduct user account ── */
+async function deductUser() {
+  const amount = parseFloat(document.getElementById('deductInput').value) || 0;
+  const note   = document.getElementById('adminNoteInput')?.value?.trim() || '';
+  if (amount <= 0) { Swal.fire({icon:'warning',title:'Enter a valid amount',confirmButtonColor:'#0052FF'}); return; }
+  const newBal = Math.max(0, (drawerUserData.balance||0) - amount);
+  const res = await Swal.fire({
+    icon:'warning',
+    title:`Deduct ${fmtN(amount)} from balance?`,
+    html:`<div style="font-size:13px;color:var(--muted);">User: <b>${drawerUserData.fullName||drawerUserData.username}</b><br>New balance: <b>${fmtN(newBal)}</b></div>`,
+    showCancelButton:true, confirmButtonText:'Yes, Deduct', confirmButtonColor:'#FF4D6D', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(drawerUserId).update({ balance: newBal });
+    await db.collection('admin_actions').add({
+      action:'deduct', userId:drawerUserId, amount, note,
+      adminUid: auth.currentUser?.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    drawerUserData.balance = newBal;
+    const idx = allUsers.findIndex(u => u.id === drawerUserId);
+    if (idx !== -1) allUsers[idx].balance = newBal;
+    document.getElementById('deductInput').value = '';
+    Swal.fire({icon:'success',title:'Balance Deducted',text:`₦${amount.toLocaleString()} removed.`,timer:2000,showConfirmButton:false});
+    renderUsers(allUsers);
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ── Suspend user ── */
+async function suspendUser(days) {
+  const reason = document.getElementById('suspendReasonInput')?.value?.trim() || '';
+  const label  = days >= 99999 ? 'permanently' : `for ${days} day${days!==1?'s':''}`;
+  const res = await Swal.fire({
+    icon:'warning',
+    title:`Suspend ${drawerUserData.fullName||drawerUserData.username} ${label}?`,
+    text: reason ? `Reason: ${reason}` : 'No reason provided.',
+    showCancelButton:true, confirmButtonText:'Yes, Suspend',
+    confirmButtonColor:'#FFB800', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    const suspendedUntil = days >= 99999
+      ? new Date('2099-01-01')
+      : new Date(Date.now() + days * 86400000);
+    await db.collection('users').doc(drawerUserId).update({
+      suspended: true,
+      suspendedUntil: firebase.firestore.Timestamp.fromDate(suspendedUntil),
+      suspendReason: reason || ''
+    });
+    drawerUserData.suspended      = true;
+    drawerUserData.suspendReason  = reason;
+    drawerUserData.suspendedUntil = firebase.firestore.Timestamp.fromDate(suspendedUntil);
+    const idx = allUsers.findIndex(u => u.id === drawerUserId);
+    if (idx !== -1) { allUsers[idx].suspended = true; allUsers[idx].suspendReason = reason; }
+    Swal.fire({icon:'success',title:'Account Suspended',text:`User suspended ${label}.`,timer:2000,showConfirmButton:false});
+    loadDrawerTab('danger');
+    renderUsers(allUsers);
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ── Unsuspend user ── */
+async function unsuspendUser() {
+  const res = await Swal.fire({
+    icon:'question', title:'Lift suspension?',
+    text:`${drawerUserData.fullName||drawerUserData.username} will be able to log in again.`,
+    showCancelButton:true, confirmButtonText:'Yes, Unsuspend',
+    confirmButtonColor:'#00C48C', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(drawerUserId).update({
+      suspended: false, suspendedUntil: null, suspendReason: ''
+    });
+    drawerUserData.suspended = false;
+    const idx = allUsers.findIndex(u => u.id === drawerUserId);
+    if (idx !== -1) allUsers[idx].suspended = false;
+    Swal.fire({icon:'success',title:'Suspension Lifted',timer:2000,showConfirmButton:false});
+    loadDrawerTab('danger');
+    renderUsers(allUsers);
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ── Delete user ── */
+async function deleteUser() {
+  const res = await Swal.fire({
+    icon:'error',
+    title:'Delete Account?',
+    html:`<div style="font-size:13.5px;color:var(--muted);">This will <b>permanently delete</b> all Firestore data for<br><b>${drawerUserData.fullName||drawerUserData.username||drawerUserData.email}</b>.<br><br>This <b>cannot be undone</b>.</div>`,
+    input:'text',
+    inputPlaceholder:`Type DELETE to confirm`,
+    showCancelButton:true, confirmButtonText:'Delete Account',
+    confirmButtonColor:'#FF4D6D', cancelButtonColor:'#6B7A99',
+    preConfirm: (val) => {
+      if (val !== 'DELETE') { Swal.showValidationMessage('Type DELETE in capitals to confirm'); return false; }
+      return true;
+    }
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(drawerUserId).delete();
+    closeUserDrawerDirect();
+    allUsers = allUsers.filter(u => u.id !== drawerUserId);
+    renderUsers(allUsers);
+    Swal.fire({icon:'success',title:'Account Deleted',timer:2000,showConfirmButton:false});
+  } catch(e) { Swal.fire({icon:'error',title:'Delete Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ══════════════════════════════════
+   WITHDRAWALS TAB
+══════════════════════════════════ */
+let allWithdrawals = [];
+let wdlFilter      = 'all';
+
+async function loadWithdrawals() {
+  try {
+    const snap = await db.collection('withdrawals').get();
+    allWithdrawals = snap.docs.map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => {
+        const at = a.requestedAt ? a.requestedAt.toMillis() : 0;
+        const bt = b.requestedAt ? b.requestedAt.toMillis() : 0;
+        return bt - at;
+      });
+    renderWithdrawals(allWithdrawals);
+
+    /* Update sidebar badge */
+    const pending = allWithdrawals.filter(w => w.status === 'pending').length;
+    const badge   = document.getElementById('pendingWdlBadge');
+    if (badge) { badge.style.display = pending > 0 ? 'inline' : 'none'; badge.textContent = pending; }
+  } catch(e) { console.error('Withdrawals error:', e); }
+}
+
+function filterWdl(status, btn) {
+  wdlFilter = status;
+  document.querySelectorAll('#tab-withdrawals .tc-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const list = status === 'all' ? allWithdrawals : allWithdrawals.filter(w => w.status === status);
+  renderWithdrawals(list);
+}
+
+function renderWithdrawals(list) {
+  const body = document.getElementById('wdlBody');
+  body.innerHTML = '';
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="te-emoji">💸</div><div class="te-title">No withdrawals found</div></div></td></tr>`;
+    return;
+  }
+  list.forEach(w => {
+    const st = w.status || 'pending';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div style="font-size:13px;font-weight:700;">${w.userName||'—'}</div>
+        <div style="font-size:11px;color:var(--muted);">${w.userEmail||''}</div>
+      </td>
+      <td><span class="amt-cell ${st==='approved'?'green':''}">${fmtN(w.amount)}</span></td>
+      <td style="font-size:12.5px;">${w.bankName||'—'}</td>
+      <td>
+        <div style="font-size:12.5px;font-weight:700;">${w.accountNumber||'—'}</div>
+        <div style="font-size:11px;color:var(--muted);">${w.accountName||''}</div>
+      </td>
+      <td style="font-size:11.5px;color:var(--muted);">${w.refCode||'—'}</td>
+      <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDateShort(w.requestedAt)}</td>
+      <td>
+        ${st === 'pending' ? `
+          <button class="act-btn act-approve" onclick="approveWithdrawal('${w.id}','${w.userId}',${w.amount})" style="margin-right:4px;">Approve</button>
+          <button class="act-btn act-reject"  onclick="rejectWithdrawal('${w.id}','${w.userId}',${w.amount})">Reject</button>
+        ` : `<span style="font-size:12px;color:var(--muted);">${st==='approved'?'✅ Paid':'❌ Rejected'}</span>`}
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+async function approveWithdrawal(wdlId, userId, amount) {
+  const res = await Swal.fire({
+    icon:'question',
+    title:`Approve Withdrawal?`,
+    html:`<div style="font-size:14px;">Confirm you have <b>sent ₦${Number(amount).toLocaleString()}</b> to the user's bank account.</div>`,
+    showCancelButton:true, confirmButtonText:'✅ Yes, Approved & Paid',
+    confirmButtonColor:'#00C48C', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('withdrawals').doc(wdlId).update({
+      status:'approved',
+      processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      processedBy: auth.currentUser?.uid || 'admin'
+    });
+    const idx = allWithdrawals.findIndex(w => w.id === wdlId);
+    if (idx !== -1) allWithdrawals[idx].status = 'approved';
+    const filterList = wdlFilter==='all' ? allWithdrawals : allWithdrawals.filter(w=>w.status===wdlFilter);
+    renderWithdrawals(filterList);
+    Swal.fire({icon:'success',title:'Withdrawal Approved!',timer:2000,showConfirmButton:false});
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+async function rejectWithdrawal(wdlId, userId, amount) {
+  const {value:reason, isConfirmed} = await Swal.fire({
+    icon:'warning',
+    title:'Reject Withdrawal?',
+    html:`<div style="font-size:13px;color:var(--muted);margin-bottom:10px;">The user's balance was already deducted when they submitted this request. Rejecting will <b>refund ₦${Number(amount).toLocaleString()} back</b> to their balance.</div>`,
+    input:'text', inputPlaceholder:'Reason for rejection (shown to user)',
+    showCancelButton:true, confirmButtonText:'Reject & Refund',
+    confirmButtonColor:'#FF4D6D', cancelButtonColor:'#6B7A99'
+  });
+  if (!isConfirmed) return;
+  try {
+    const batch = db.batch();
+    batch.update(db.collection('withdrawals').doc(wdlId), {
+      status:'rejected',
+      adminNote: reason || '',
+      processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      processedBy: auth.currentUser?.uid || 'admin'
+    });
+    /* Refund the balance */
+    batch.update(db.collection('users').doc(userId), {
+      balance: firebase.firestore.FieldValue.increment(amount)
+    });
+    await batch.commit();
+    const idx = allWithdrawals.findIndex(w => w.id === wdlId);
+    if (idx !== -1) allWithdrawals[idx].status = 'rejected';
+    const filterList = wdlFilter==='all' ? allWithdrawals : allWithdrawals.filter(w=>w.status===wdlFilter);
+    renderWithdrawals(filterList);
+    Swal.fire({icon:'success',title:'Rejected & Refunded',text:'Balance has been returned to the user.',timer:2500,showConfirmButton:false});
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ══════════════════════════════════
+   SUPPORT CHAT — ADMIN SIDE
+   Admin can see all threads and reply
+══════════════════════════════════ */
+let activeThreadId   = null;
+let chatMsgListener  = null;
+
+async function loadSupportThreads() {
+  try {
+    const snap = await db.collection('support_threads')
+      .orderBy('lastMessageAt', 'desc')
+      .get();
+
+    const list = document.getElementById('threadList');
+    list.innerHTML = '';
+    document.getElementById('threadCount').textContent = `(${snap.size})`;
+
+    if (snap.empty) {
+      list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">No conversations yet</div>';
+      return;
+    }
+
+    /* Update support badge */
+    const unread = snap.docs.filter(d => (d.data().unreadByAdmin||0) > 0).length;
+    const badge  = document.getElementById('pendingSupportBadge');
+    if (badge) { badge.style.display = unread > 0 ? 'inline' : 'none'; badge.textContent = unread; }
+
+    snap.docs.forEach(doc => {
+      const t    = doc.data();
+      const div  = document.createElement('div');
+      const unrd = (t.unreadByAdmin||0) > 0;
+      div.style.cssText = `padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;${activeThreadId===doc.id?'background:#E8F0FF;':''}`;
+      div.onmouseover = () => { if (activeThreadId !== doc.id) div.style.background = '#F8FAFF'; };
+      div.onmouseout  = () => { if (activeThreadId !== doc.id) div.style.background = ''; };
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+          <div style="font-size:13.5px;font-weight:${unrd?800:700};color:var(--text);">${t.userName||'User'}</div>
+          ${unrd ? `<span style="background:var(--primary);color:white;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700;">${t.unreadByAdmin}</span>` : ''}
+        </div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.lastMessage||'No messages'}</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">${t.userEmail||''}</div>`;
+      div.onclick = () => openSupportThread(doc.id, t);
+      list.appendChild(div);
+    });
+  } catch(e) { console.error('Support threads error:', e); }
+}
+
+function openSupportThread(threadId, thread) {
+  activeThreadId = threadId;
+
+  /* Update head */
+  document.getElementById('chatWindowHead').innerHTML = `
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;">${(thread.userName||'U').charAt(0).toUpperCase()}</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;">${thread.userName||'User'}</div>
+      <div style="font-size:11px;color:var(--muted);">${thread.userEmail||''}</div>
+    </div>
+    <button onclick="closeSupportThread(threadId)" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;">×</button>`;
+
+  document.getElementById('chatWindowFooter').style.display = 'block';
+
+  /* Reset unread count */
+  db.collection('support_threads').doc(threadId).update({ unreadByAdmin: 0 }).catch(()=>{});
+
+  /* Listen for messages */
+  if (chatMsgListener) chatMsgListener();
+  const body = document.getElementById('chatWindowBody');
+  body.innerHTML = '';
+
+  chatMsgListener = db.collection('support_messages')
+    .where('threadId', '==', threadId)
+    .orderBy('createdAt', 'asc')
+    .onSnapshot(snap => {
+      body.innerHTML = '';
+      snap.forEach(doc => {
+        const m      = doc.data();
+        const isUser = m.sender === 'user';
+        const timeStr = m.createdAt
+          ? m.createdAt.toDate().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+          : '';
+        const msgDiv = document.createElement('div');
+        msgDiv.style.cssText = `display:flex;gap:8px;align-items:flex-end;${isUser?'':'flex-direction:row-reverse;'}`;
+        msgDiv.innerHTML = `
+          <div style="width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:${isUser?'linear-gradient(135deg,var(--primary),#001c6b)':'linear-gradient(135deg,var(--accent),var(--accent-dark))'};color:white;">
+            ${isUser?(thread.userName||'U').charAt(0).toUpperCase():'🎧'}
+          </div>
+          <div>
+            <div style="max-width:72%;padding:10px 14px;border-radius:${isUser?'16px 16px 16px 4px':'16px 16px 4px 16px'};font-size:13.5px;font-weight:500;line-height:1.5;background:${isUser?'white':'var(--primary)'};color:${isUser?'var(--text)':'white'};box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+              ${m.message.replace(/</g,'&lt;').replace(/
+/g,'<br>')}
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;text-align:${isUser?'left':'right'};">${timeStr}</div>
+          </div>`;
+        body.appendChild(msgDiv);
+      });
+      body.scrollTop = body.scrollHeight;
+    }, err => console.error('Chat listener:', err));
+
+  /* Highlight selected thread */
+  loadSupportThreads();
+}
+
+function closeSupportThread() {
+  if (chatMsgListener) { chatMsgListener(); chatMsgListener = null; }
+  activeThreadId = null;
+  document.getElementById('chatWindowHead').innerHTML = '<div style="color:var(--muted);font-size:13px;font-weight:600;">← Select a conversation from the list</div>';
+  document.getElementById('chatWindowBody').innerHTML = '';
+  document.getElementById('chatWindowFooter').style.display = 'none';
+}
+
+async function sendAdminReply() {
+  const input = document.getElementById('adminReplyInput');
+  const text  = input.value.trim();
+  if (!text || !activeThreadId) return;
+
+  input.value = '';
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+
+  try {
+    await db.collection('support_messages').add({
+      threadId:  activeThreadId,
+      userId:    activeThreadId, /* thread doc ID == user ID */
+      message:   text,
+      sender:    'admin',
+      createdAt: now,
+      read:      false
+    });
+    await db.collection('support_threads').doc(activeThreadId).update({
+      lastMessage:   text,
+      lastMessageAt: now,
+      updatedAt:     now
+    });
+  } catch(e) {
+    Swal.fire({icon:'error',title:'Send Failed',text:e.message,confirmButtonColor:'#0052FF'});
+  }
+}
+
+/* Close modal on overlay click */
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Admin Access</title>
+
+<!-- NO LINK TO THIS PAGE FROM ANY USER-FACING PAGE -->
+<!-- Access: yoursite.com/admin-login.html            -->
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+  :root {
+    --primary:      #0052FF;
+    --primary-dark: #0039b3;
+    --accent:       #00D4A0;
+    --danger:       #FF4D6D;
+    --success:      #00C48C;
+    --warning:      #FFB800;
+    --text:         #0D1B3E;
+    --muted:        #6B7A99;
+    --border:       #D8E0F0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: linear-gradient(135deg, #001c6b 0%, var(--primary-dark) 40%, #0a0a2e 100%);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+    position: relative; overflow: hidden;
+  }
+
+  /* Animated background circles */
+  body::before {
+    content: ''; position: absolute;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: rgba(0,82,255,0.08);
+    top: -200px; right: -200px;
+    animation: float 8s ease-in-out infinite;
+  }
+  body::after {
+    content: ''; position: absolute;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: rgba(0,212,160,0.06);
+    bottom: -100px; left: -100px;
+    animation: float 10s ease-in-out infinite reverse;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-30px) rotate(5deg); }
+  }
+
+  /* ── LOCK SCREEN OVERLAY ── */
+  /* Shows when page is locked after too many attempts */
+  #lockScreen {
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 16px; position: relative; z-index: 10;
+    color: white;
+  }
+  #lockScreen.show { display: flex; }
+  .lock-icon { font-size: 64px; margin-bottom: 8px; }
+  .lock-title { font-family:'Sora',sans-serif; font-size:26px; font-weight:700; }
+  .lock-sub   { font-size:14px; color:rgba(255,255,255,0.7); max-width:280px; line-height:1.6; }
+  .lock-countdown {
+    font-family:'Sora',sans-serif; font-size:32px; font-weight:700;
+    color:var(--warning); letter-spacing: 2px;
+  }
+
+  /* ── LOGIN CARD ── */
+  .login-card {
+    background: white; border-radius: 28px; padding: 40px 36px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+    position: relative; z-index: 10;
+    animation: cardIn .6s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform:translateY(32px) scale(0.97); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  /* Header */
+  .card-header { text-align:center; margin-bottom:32px; }
+  .shield-icon {
+    width: 70px; height: 70px; border-radius: 22px; margin: 0 auto 16px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; box-shadow: 0 10px 30px rgba(0,82,255,0.3);
+  }
+  .card-title {
+    font-family:'Sora',sans-serif; font-size:24px;
+    font-weight:700; color:var(--text); margin-bottom:5px;
+  }
+  .card-sub { font-size:13px; color:var(--muted); font-weight:600; }
+
+  /* Security badge strip */
+  .security-strip {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: #E8FFF6; border-radius: 10px; padding: 8px 14px; margin-bottom: 28px;
+  }
+  .security-strip span { font-size:12px; font-weight:700; color:var(--success); }
+
+  /* Attempt dots */
+  .attempt-dots {
+    display: flex; align-items: center; justify-content: center;
+    gap: 7px; margin-bottom: 22px;
+  }
+  .adot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--border); background: white;
+    transition: background .3s, border-color .3s;
+  }
+  .adot.used   { background: var(--warning); border-color: var(--warning); }
+  .adot.failed { background: var(--danger);  border-color: var(--danger);  animation: shake .3s ease; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-4px)}
+    75%{transform:translateX(4px)}
+  }
+  .adot-label { font-size:11px; font-weight:700; color:var(--muted); margin-left:6px; }
+
+  /* Fields */
+  .field-group { margin-bottom:16px; }
+  .field-label {
+    font-size:11.5px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.06em;
+    display:flex; align-items:center; gap:6px; margin-bottom:7px;
+  }
+  .field-label i { font-size:11px; color:var(--primary); }
+  .field-row {
+    display:flex; align-items:center;
+    border: 2px solid var(--border); border-radius:13px; overflow:hidden;
+    transition:border-color .2s;
+  }
+  .field-row:focus-within { border-color:var(--primary); }
+  .field-row.error { border-color:var(--danger); animation: inputShake .3s ease; }
+  @keyframes inputShake {
+    0%,100%{transform:translateX(0)}
+    20%,60%{transform:translateX(-6px)}
+    40%,80%{transform:translateX(6px)}
+  }
+  .field-pfx {
+    padding: 0 14px; font-size:16px; color:var(--muted);
+    background: #F8FAFF; border-right:2px solid var(--border);
+    height:50px; display:flex; align-items:center; flex-shrink:0;
+  }
+  .field-input {
+    flex:1; padding:13px 14px; font-size:15px; font-weight:600;
+    font-family:inherit; border:none; outline:none; color:var(--text);
+    background:white; min-width:0;
+  }
+  .field-input::placeholder { color:var(--border); font-weight:400; }
+  .field-sfx {
+    padding:0 14px; background:none; border:none;
+    cursor:pointer; color:var(--muted); font-size:16px;
+    height:50px; display:flex; align-items:center; flex-shrink:0;
+    transition:color .2s;
+  }
+  .field-sfx:hover { color:var(--primary); }
+
+  /* Error message */
+  .err-msg {
+    display:none; align-items:center; gap:7px;
+    background:#FFF0F3; border:1.5px solid #ffd0d9;
+    border-radius:10px; padding:10px 14px; margin-bottom:16px;
+  }
+  .err-msg.show { display:flex; }
+  .err-msg span { font-size:12.5px; font-weight:700; color:var(--danger); }
+
+  /* Remaining attempts warning */
+  .warn-msg {
+    display:none; align-items:center; gap:7px;
+    background:#FFF8E8; border:1.5px solid #ffe0a0;
+    border-radius:10px; padding:10px 14px; margin-bottom:16px;
+  }
+  .warn-msg.show { display:flex; }
+  .warn-msg span { font-size:12.5px; font-weight:700; color:#856404; }
+
+  /* Submit button */
+  .submit-btn {
+    width:100%; padding:15px; border:none; border-radius:14px;
+    font-size:16px; font-weight:700; font-family:inherit; cursor:pointer;
+    color:white;
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    box-shadow:0 7px 26px rgba(0,82,255,0.35);
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:transform .15s, box-shadow .15s, opacity .2s;
+    margin-top:8px;
+  }
+  .submit-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,82,255,0.45); }
+  .submit-btn:disabled { opacity:.55; cursor:not-allowed; transform:none!important; }
+
+  /* Loading state */
+  .submit-btn .btn-spinner {
+    width:18px; height:18px; border:2.5px solid rgba(255,255,255,0.3);
+    border-top-color:white; border-radius:50%;
+    animation:spin .7s linear infinite; display:none;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .submit-btn.loading .btn-text    { display:none; }
+  .submit-btn.loading .btn-spinner { display:block; }
+  .submit-btn.loading i            { display:none; }
+
+  /* Footer note */
+  .card-footer {
+    text-align:center; margin-top:22px;
+    font-size:11.5px; color:var(--muted); font-weight:600;
+    line-height:1.6;
+  }
+  .card-footer i { color:var(--success); }
+
+  /* ── 2FA PIN section (shown after email+pw verified) ── */
+  #pinSection { display:none; }
+  #pinSection.show { display:block; }
+  .pin-title { font-family:'Sora',sans-serif; font-size:17px; font-weight:700; color:var(--text); margin-bottom:5px; text-align:center; }
+  .pin-sub   { font-size:12.5px; color:var(--muted); font-weight:600; margin-bottom:18px; text-align:center; }
+  .pin-row   { display:flex; gap:10px; justify-content:center; margin-bottom:18px; }
+  .pin-input {
+    width:52px; height:56px; border:2px solid var(--border); border-radius:13px;
+    text-align:center; font-size:22px; font-weight:700; color:var(--text);
+    font-family:'Sora',sans-serif; outline:none; transition:border-color .2s;
+  }
+  .pin-input:focus { border-color:var(--primary); }
+  .back-link { text-align:center; margin-top:12px; }
+  .back-link button {
+    background:none; border:none; cursor:pointer; color:var(--primary);
+    font-size:13px; font-weight:700; font-family:inherit;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LOCK SCREEN (shown after max failed attempts) ══ -->
+<div id="lockScreen">
+  <div class="lock-icon">🔒</div>
+  <div class="lock-title">Access Locked</div>
+  <div class="lock-sub">Too many failed login attempts. This session has been locked for security.</div>
+  <div class="lock-countdown" id="lockCountdown">30:00</div>
+  <div class="lock-sub">Please wait before trying again.</div>
+</div>
+
+<!-- ══ LOGIN CARD ══ -->
+<div class="login-card" id="loginCard">
+
+  <!-- Header -->
+  <div class="card-header">
+    <div class="shield-icon">🛡️</div>
+    <div class="card-title">Admin Access</div>
+    <div class="card-sub">Cashpoint Control Panel · Restricted</div>
+  </div>
+
+  <!-- Security strip -->
+  <div class="security-strip">
+    <i class="fas fa-lock" style="color:var(--success);font-size:12px;"></i>
+    <span>Secured · Monitored · Admin Only</span>
+  </div>
+
+  <!-- Attempt dots -->
+  <div class="attempt-dots" id="attemptDots">
+    <div class="adot" id="d1"></div>
+    <div class="adot" id="d2"></div>
+    <div class="adot" id="d3"></div>
+    <div class="adot" id="d4"></div>
+    <div class="adot" id="d5"></div>
+    <span class="adot-label" id="dotsLabel">5 attempts remaining</span>
+  </div>
+
+  <!-- Error message -->
+  <div class="err-msg" id="errMsg">
+    <i class="fas fa-times-circle" style="color:var(--danger);font-size:16px;"></i>
+    <span id="errText">Invalid credentials. Access denied.</span>
+  </div>
+
+  <!-- Warning message -->
+  <div class="warn-msg" id="warnMsg">
+    <i class="fas fa-exclamation-triangle" style="color:#856404;font-size:14px;"></i>
+    <span id="warnText"></span>
+  </div>
+
+  <!-- ═══ STEP 1: Email + Password ═══ -->
+  <div id="credSection">
+    <div class="field-group">
+      <div class="field-label"><i class="fas fa-envelope"></i> Admin Email</div>
+      <div class="field-row" id="rowEmail">
+        <div class="field-pfx"><i class="fas fa-envelope"></i></div>
+        <input class="field-input" id="adminEmail" type="email" placeholder="admin@cashpoint.com"
+          onkeydown="if(event.key==='Enter') focusNext('adminPassword')"/>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label"><i class="fas fa-lock"></i> Password</div>
+      <div class="field-row" id="rowPassword">
+        <div class="field-pfx"><i class="fas fa-lock"></i></div>
+        <input class="field-input" id="adminPassword" type="password" placeholder="Enter admin password"
+          onkeydown="if(event.key==='Enter') attemptLogin()"/>
+        <button class="field-sfx" onclick="togglePw()" tabindex="-1" id="pwToggle">
+          <i class="fas fa-eye"></i>
+        </button>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="loginBtn" onclick="attemptLogin()">
+      <i class="fas fa-shield-alt"></i>
+      <span class="btn-text">Access Admin Panel</span>
+      <div class="btn-spinner"></div>
+    </button>
+
+    <div class="card-footer">
+      <i class="fas fa-circle-check"></i> All login attempts are logged to Firestore.<br>
+      Unauthorized access attempts are recorded.
+    </div>
+  </div>
+
+  <!-- ═══ STEP 2: 4-digit PIN (shown after email+pw pass) ═══ -->
+  <div id="pinSection">
+    <div class="pin-title">🔐 Enter Your Admin PIN</div>
+    <div class="pin-sub">Enter the 4-digit PIN set in your admin account</div>
+    <div class="pin-row">
+      <input class="pin-input" id="p1" type="password" maxlength="1" inputmode="numeric"
+        oninput="pinNext(this,'p2')" onkeydown="pinBack(event,this,null)"/>
+      <input class="pin-input" id="p2" type="password" maxlength="1" inputmode="numeric"
+        oninput="pinNext(this,'p3')" onkeydown="pinBack(event,this,'p1')"/>
+      <input class="pin-input" id="p3" type="password" maxlength="1" inputmode="numeric"
+        oninput="pinNext(this,'p4')" onkeydown="pinBack(event,this,'p2')"/>
+      <input class="pin-input" id="p4" type="password" maxlength="1" inputmode="numeric"
+        oninput="pinNext(this,null)" onkeydown="pinBack(event,this,'p3')"/>
+    </div>
+    <button class="submit-btn" id="pinBtn" onclick="verifyPin()">
+      <i class="fas fa-check-circle"></i>
+      <span class="btn-text">Verify PIN</span>
+      <div class="btn-spinner"></div>
+    </button>
+    <div class="back-link">
+      <button onclick="resetToStep1()">← Back to login</button>
+    </div>
+  </div>
+
+</div><!-- end login-card -->
+
+<script>
+/* ── Firebase ── */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ══════════════════════════════════════
+   SECURITY CONSTANTS
+══════════════════════════════════════ */
+const MAX_ATTEMPTS  = 5;     // lock after 5 failed attempts
+const LOCK_DURATION = 30 * 60 * 1000;  // 30 minutes in ms
+const LOCK_KEY      = 'cp_admin_lock';
+const ATTEMPTS_KEY  = 'cp_admin_attempts';
+
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+let failedAttempts = 0;
+let tempUser       = null;   // holds Firebase user after step 1
+let lockTimer      = null;
+
+/* ══════════════════════════════════════
+   ON PAGE LOAD
+   Check if already logged in as admin,
+   or if page is currently locked.
+══════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  /* Check lockout first */
+  if (isLocked()) {
+    showLockScreen();
+    return;
+  }
+
+  /* Restore failed attempts from sessionStorage */
+  failedAttempts = parseInt(sessionStorage.getItem(ATTEMPTS_KEY) || '0');
+  updateAttemptDots();
+
+  /* Check if already authenticated as admin */
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      const isAdm = await checkIsAdmin(user.uid);
+      if (isAdm) {
+        /* Already logged in and is admin — go straight to panel */
+        window.location.href = 'admin.html';
+      } else {
+        /* Logged in but not admin — sign out silently */
+        await auth.signOut();
+      }
+    }
+  });
+});
+
+/* ══════════════════════════════════════
+   CHECK isAdmin FLAG IN FIRESTORE
+   This is the REAL security check.
+   isAdmin: true must be set manually
+   in Firestore — it cannot be set by
+   any user-facing page or rule.
+══════════════════════════════════════ */
+async function checkIsAdmin(uid) {
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    return snap.exists && snap.data().isAdmin === true;
+  } catch(e) {
+    return false;
+  }
+}
+
+/* ══════════════════════════════════════
+   STEP 1: EMAIL + PASSWORD LOGIN
+══════════════════════════════════════ */
+async function attemptLogin() {
+  if (isLocked()) { showLockScreen(); return; }
+
+  const email = document.getElementById('adminEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('adminPassword').value;
+  const btn   = document.getElementById('loginBtn');
+
+  hideMessages();
+
+  if (!email || !pass) {
+    showError('Please enter both email and password.');
+    return;
+  }
+  if (!email.includes('@')) {
+    showError('Please enter a valid email address.');
+    return;
+  }
+
+  setLoading(btn, true);
+
+  try {
+    /* ── Attempt Firebase Auth login ── */
+    const cred = await auth.signInWithEmailAndPassword(email, pass);
+    const uid  = cred.user.uid;
+
+    /* ── Check isAdmin flag in Firestore ── */
+    const isAdm = await checkIsAdmin(uid);
+
+    if (!isAdm) {
+      /* Authenticated but NOT admin — sign out immediately */
+      await auth.signOut();
+      await recordFailedAttempt(email, 'not_admin');
+      handleFailedAttempt('Access denied. This account does not have admin privileges.');
+      setLoading(btn, false);
+      return;
+    }
+
+    /* ── Check if PIN is configured ── */
+    const userSnap = await db.collection('users').doc(uid).get();
+    const adminPin = userSnap.data().adminPin || null;
+
+    /* ── Reset failed attempts on success ── */
+    sessionStorage.removeItem(ATTEMPTS_KEY);
+    failedAttempts = 0;
+    updateAttemptDots();
+
+    /* Log successful step-1 */
+    await logAttempt(email, uid, 'step1_success');
+
+    if (adminPin) {
+      /* Has PIN — go to step 2 */
+      tempUser = cred.user;
+      await auth.signOut();   // sign out until PIN is verified
+      setLoading(btn, false);
+      showPinSection();
+    } else {
+      /* No PIN configured — go straight to admin panel */
+      setLoading(btn, false);
+      window.location.href = 'admin.html';
+    }
+
+  } catch(err) {
+    await recordFailedAttempt(email, err.code);
+
+    let msg = 'Invalid email or password.';
+    if (err.code === 'auth/user-not-found')     msg = 'No account found with this email.';
+    if (err.code === 'auth/wrong-password')      msg = 'Incorrect password.';
+    if (err.code === 'auth/too-many-requests')   msg = 'Too many attempts. Firebase has temporarily blocked this account.';
+    if (err.code === 'auth/network-request-failed') msg = 'Network error. Check your connection.';
+
+    handleFailedAttempt(msg);
+    setLoading(btn, false);
+  }
+}
+
+/* ══════════════════════════════════════
+   STEP 2: PIN VERIFICATION
+══════════════════════════════════════ */
+async function verifyPin() {
+  if (!tempUser) { resetToStep1(); return; }
+
+  const pin = ['p1','p2','p3','p4'].map(id => document.getElementById(id).value).join('');
+  const btn = document.getElementById('pinBtn');
+
+  if (pin.length < 4) {
+    showError('Please enter all 4 PIN digits.');
+    return;
+  }
+
+  setLoading(btn, true);
+  hideMessages();
+
+  try {
+    /* Re-authenticate to get the user back */
+    const email    = tempUser.email;
+    const pwField  = document.getElementById('adminPassword').value;
+    const cred     = await auth.signInWithEmailAndPassword(email, pwField);
+    const uid      = cred.user.uid;
+
+    /* Fetch admin PIN from Firestore */
+    const snap     = await db.collection('users').doc(uid).get();
+    const savedPin = snap.data().adminPin || '';
+
+    if (pin !== savedPin) {
+      await auth.signOut();
+      await recordFailedAttempt(email, 'wrong_pin');
+      handleFailedAttempt('Incorrect PIN. Please try again.');
+      ['p1','p2','p3','p4'].forEach(id => {
+        const el = document.getElementById(id);
+        el.value = '';
+        el.classList.add('error');
+        setTimeout(() => el.classList.remove('error'), 500);
+      });
+      document.getElementById('p1').focus();
+      setLoading(btn, false);
+      return;
+    }
+
+    /* ── PIN correct — all checks passed ── */
+    await logAttempt(email, uid, 'full_success');
+    sessionStorage.removeItem(ATTEMPTS_KEY);
+    setLoading(btn, false);
+    window.location.href = 'admin.html';
+
+  } catch(err) {
+    console.error('PIN verify error:', err);
+    showError('Verification failed. Please go back and try again.');
+    setLoading(btn, false);
+  }
+}
+
+/* ══════════════════════════════════════
+   FAILED ATTEMPT HANDLER
+   Tracks attempts, shows warnings,
+   locks the page on max attempts.
+══════════════════════════════════════ */
+function handleFailedAttempt(msg) {
+  failedAttempts++;
+  sessionStorage.setItem(ATTEMPTS_KEY, failedAttempts);
+  updateAttemptDots();
+  showError(msg);
+
+  const remaining = MAX_ATTEMPTS - failedAttempts;
+
+  if (failedAttempts >= MAX_ATTEMPTS) {
+    /* Lock the page */
+    const lockUntil = Date.now() + LOCK_DURATION;
+    localStorage.setItem(LOCK_KEY, lockUntil.toString());
+    setTimeout(() => showLockScreen(), 800);
+    return;
+  }
+
+  if (remaining <= 2) {
+    showWarning(`⚠️ Warning: ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before this session is locked.`);
+  }
+}
+
+/* ── Update the 5 attempt dots ── */
+function updateAttemptDots() {
+  const remaining = Math.max(0, MAX_ATTEMPTS - failedAttempts);
+  const label     = document.getElementById('dotsLabel');
+
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('d' + i);
+    dot.className = 'adot';
+    if (i <= failedAttempts) dot.classList.add('failed');
+  }
+
+  label.textContent = remaining > 0
+    ? `${remaining} attempt${remaining !== 1 ? 's' : ''} remaining`
+    : 'Locked';
+}
+
+/* ══════════════════════════════════════
+   LOCK SCREEN
+══════════════════════════════════════ */
+function isLocked() {
+  const lockUntil = parseInt(localStorage.getItem(LOCK_KEY) || '0');
+  return Date.now() < lockUntil;
+}
+
+function showLockScreen() {
+  document.getElementById('loginCard').style.display  = 'none';
+  const ls = document.getElementById('lockScreen');
+  ls.classList.add('show');
+  startLockCountdown();
+}
+
+function startLockCountdown() {
+  const lockUntil = parseInt(localStorage.getItem(LOCK_KEY) || '0');
+  function tick() {
+    const remaining = lockUntil - Date.now();
+    if (remaining <= 0) {
+      /* Unlock */
+      localStorage.removeItem(LOCK_KEY);
+      sessionStorage.removeItem(ATTEMPTS_KEY);
+      window.location.reload();
+      return;
+    }
+    const m = Math.floor(remaining / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('lockCountdown').textContent =
+      String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+  tick();
+  lockTimer = setInterval(tick, 1000);
+}
+
+/* ══════════════════════════════════════
+   AUDIT LOG — ALL ATTEMPTS LOGGED
+   Admin can review these in Firestore:
+   Collection: admin_login_attempts
+══════════════════════════════════════ */
+async function logAttempt(email, uid, result) {
+  try {
+    await db.collection('admin_login_attempts').add({
+      email,
+      uid:       uid || 'unknown',
+      result,
+      userAgent: navigator.userAgent,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) { /* non-fatal */ }
+}
+
+async function recordFailedAttempt(email, reason) {
+  await logAttempt(email, null, 'failed_' + (reason || 'unknown'));
+}
+
+/* ══════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════ */
+function showError(msg) {
+  const err = document.getElementById('errMsg');
+  document.getElementById('errText').textContent = msg;
+  err.classList.add('show');
+  /* Shake the input rows */
+  ['rowEmail','rowPassword'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add('error');
+    setTimeout(() => el.classList.remove('error'), 500);
+  });
+}
+function showWarning(msg) {
+  const w = document.getElementById('warnMsg');
+  document.getElementById('warnText').textContent = msg;
+  w.classList.add('show');
+}
+function hideMessages() {
+  document.getElementById('errMsg').classList.remove('show');
+  document.getElementById('warnMsg').classList.remove('show');
+}
+function setLoading(btn, loading) {
+  btn.disabled = loading;
+  btn.classList.toggle('loading', loading);
+}
+function togglePw() {
+  const input = document.getElementById('adminPassword');
+  const btn   = document.getElementById('pwToggle');
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  btn.innerHTML = `<i class="fas fa-eye${isText ? '' : '-slash'}"></i>`;
+}
+function focusNext(id) {
+  document.getElementById(id).focus();
+}
+
+/* PIN navigation */
+function pinNext(el, nextId) {
+  if (el.value.length === 1 && nextId) {
+    document.getElementById(nextId).focus();
+  }
+  /* Auto-submit when all 4 entered */
+  const all = ['p1','p2','p3','p4'].every(id => document.getElementById(id).value.length === 1);
+  if (all) setTimeout(() => verifyPin(), 100);
+}
+function pinBack(e, el, prevId) {
+  if (e.key === 'Backspace' && !el.value && prevId) {
+    document.getElementById(prevId).focus();
+  }
+}
+
+function showPinSection() {
+  document.getElementById('credSection').style.display = 'none';
+  document.getElementById('pinSection').style.display  = 'block';
+  hideMessages();
+  setTimeout(() => document.getElementById('p1').focus(), 100);
+}
+
+function resetToStep1() {
+  tempUser = null;
+  document.getElementById('credSection').style.display = 'block';
+  document.getElementById('pinSection').style.display  = 'none';
+  ['p1','p2','p3','p4'].forEach(id => document.getElementById(id).value = '');
+  hideMessages();
+}
+
+/* ── Focus email on load ── */
+setTimeout(() => {
+  const emailEl = document.getElementById('adminEmail');
+  if (emailEl) emailEl.focus();
+}, 300);
+</script>
+</body>
+</html>
