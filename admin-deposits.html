@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Deposits</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{--primary:#0052FF;--danger:#FF4D6D;--warning:#FFB800;--success:#00C48C;--text:#0D1B3E;--muted:#6B7A99;--border:#D8E0F0;--bg:#F0F4FF;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,82,255,0.06);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);text-decoration:none;transition:background .2s;}
+.back-btn:hover{background:var(--border);}
+.page-title{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;}
+
+/* SUMMARY CARDS */
+.summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;padding:20px 20px 0;}
+.scard{background:white;border-radius:14px;padding:16px;box-shadow:0 3px 12px rgba(0,82,255,0.06);}
+.scard-val{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;margin-bottom:3px;}
+.scard-lbl{font-size:11.5px;color:var(--muted);font-weight:700;}
+
+/* FILTER BAR */
+.filter-bar{padding:14px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-wrap{display:flex;align-items:center;gap:8px;background:white;border:2px solid var(--border);border-radius:11px;padding:0 14px;flex:1;min-width:200px;max-width:320px;transition:border-color .2s;}
+.search-wrap:focus-within{border-color:var(--primary);}
+.search-wrap i{color:var(--muted);font-size:14px;}
+.search-input{flex:1;border:none;background:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);padding:10px 0;}
+.fbtn{padding:8px 16px;border-radius:9px;border:2px solid var(--border);background:white;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .2s;position:relative;}
+.fbtn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.fbtn .cnt{position:absolute;top:-7px;right:-7px;background:var(--danger);color:white;border-radius:99px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
+.refresh-btn{width:38px;height:38px;border-radius:10px;border:2px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;transition:all .2s;flex-shrink:0;margin-left:auto;}
+.refresh-btn:hover{border-color:var(--primary);color:var(--primary);}
+.spin{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TABLE */
+.table-wrap{padding:0 20px 20px;overflow-x:auto;}
+.table{width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,82,255,0.07);}
+.table th{padding:13px 16px;text-align:left;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:#F8FAFF;border-bottom:1px solid var(--border);}
+.table td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:middle;}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:#FAFBFF;}
+
+.u-cell{display:flex;align-items:center;gap:10px;}
+.u-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--primary),#001c6b);color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;}
+.u-name{font-size:13px;font-weight:700;}
+.u-email{font-size:11.5px;color:var(--muted);}
+
+.amt{font-weight:800;font-size:14px;}
+.amt.green{color:var(--success);}
+
+.ref-code{font-size:12px;background:var(--bg);padding:3px 9px;border-radius:6px;font-weight:700;color:var(--primary);font-family:monospace;}
+
+.badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge.pending{background:#FFF8E8;color:var(--warning);}
+.badge.approved{background:#E8FFF6;color:var(--success);}
+.badge.rejected{background:#FFF0F3;color:var(--danger);}
+
+.act-btn{padding:7px 13px;border-radius:9px;border:none;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
+.act-btn:hover{opacity:.82;}
+.btn-approve{background:#E8FFF6;color:var(--success);margin-right:5px;}
+.btn-reject{background:#FFF0F3;color:var(--danger);margin-right:5px;}
+.btn-view{background:#E8F0FF;color:var(--primary);}
+
+/* Skeleton */
+.skel{height:14px;background:linear-gradient(90deg,#f0f4ff 25%,#e0e8ff 50%,#f0f4ff 75%);background-size:200% 100%;border-radius:6px;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Empty */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+
+/* ═══════════ DETAIL MODAL ═══════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,0.5);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:white;border-radius:22px;width:100%;max-width:460px;box-shadow:0 24px 60px rgba(0,0,0,0.25);animation:modalIn .3s cubic-bezier(.16,1,.3,1);}
+@keyframes modalIn{from{transform:translateY(16px) scale(.97)}to{transform:translateY(0) scale(1)}}
+
+.modal-head{padding:20px 22px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+.modal-title{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;}
+.modal-close{width:32px;height:32px;border-radius:9px;background:var(--bg);border:none;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+.modal-body{padding:18px 22px;}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.mrow:last-child{border-bottom:none;}
+.mrow-lbl{font-size:12px;font-weight:700;color:var(--muted);}
+.mrow-val{font-size:13.5px;font-weight:700;text-align:right;max-width:240px;word-break:break-all;}
+
+/* Credit input inside modal */
+.credit-box{background:var(--bg);border-radius:13px;padding:14px;margin:0 22px 16px;}
+.credit-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;}
+.credit-row{display:flex;gap:8px;}
+.credit-inp{flex:1;padding:11px 13px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;outline:none;color:var(--text);transition:border-color .2s;}
+.credit-inp:focus{border-color:var(--primary);}
+
+.modal-actions{display:flex;gap:8px;padding:0 22px 20px;flex-wrap:wrap;}
+.mbtn{flex:1;min-width:100px;padding:12px;border:none;border-radius:11px;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;}
+.mbtn:hover{opacity:.85;}
+.mbtn-approve{background:var(--success);color:white;}
+.mbtn-reject{background:var(--danger);color:white;}
+.mbtn-cancel{background:var(--bg);color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back-btn" href="admin-dashboard.html"><i class="fas fa-arrow-left"></i></a>
+    <div class="page-title">💳 Deposit Management</div>
+  </div>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="summary">
+  <div class="scard"><div class="scard-val" id="sc-all">—</div><div class="scard-lbl">Total Deposits</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--warning);" id="sc-pending">—</div><div class="scard-lbl">Pending</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--success);" id="sc-approved">—</div><div class="scard-lbl">Approved</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--danger);" id="sc-rejected">—</div><div class="scard-lbl">Rejected</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--success);" id="sc-total">—</div><div class="scard-lbl">Total Approved ₦</div></div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-search"></i>
+    <input class="search-input" id="searchInput" placeholder="Search name, email, ref code..." oninput="renderTable()"/>
+  </div>
+  <button class="fbtn active" onclick="setFilter('all',this)">All <span class="cnt" id="cnt-all" style="display:none;"></span></button>
+  <button class="fbtn" onclick="setFilter('pending',this)">Pending <span class="cnt" id="cnt-pending" style="display:none;"></span></button>
+  <button class="fbtn" onclick="setFilter('approved',this)">Approved</button>
+  <button class="fbtn" onclick="setFilter('rejected',this)">Rejected</button>
+  <button class="refresh-btn" onclick="loadDeposits()" title="Refresh"><i class="fas fa-sync-alt" id="refreshIcon"></i></button>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Amount</th>
+        <th>Reference</th>
+        <th>Transfer Ref</th>
+        <th>Bank</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td><div class="skel" style="width:150px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:100px;"></div></td><td><div class="skel" style="width:100px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:120px;"></div></td></tr>
+      <tr><td><div class="skel" style="width:130px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:100px;"></div></td><td><div class="skel" style="width:100px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:120px;"></div></td></tr>
+      <tr><td><div class="skel" style="width:140px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:100px;"></div></td><td><div class="skel" style="width:100px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:120px;"></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">💳 Deposit Details</div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="credit-box" id="creditBox" style="display:none;">
+      <div class="credit-lbl">Amount to credit to user's balance (₦)</div>
+      <div class="credit-row">
+        <input class="credit-inp" id="creditInp" type="number" placeholder="Enter credit amount"/>
+      </div>
+    </div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+auth.onAuthStateChanged(u => { if (!u) window.location.href = 'admin-login.html'; else loadDeposits(); });
+
+/* ── State ── */
+let allDeposits  = [];
+let activeFilter = 'all';
+let activeDocId  = null;
+
+/* ── Helpers ── */
+const fmtN  = n => '₦' + Number(n||0).toLocaleString('en-NG');
+const fmtDT = ts => { if(!ts)return '—'; try{ const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString('en-NG',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return '—';} };
+const ini   = n  => (n||'U').charAt(0).toUpperCase();
+
+/* ════════════════════
+   LOAD
+════════════════════ */
+async function loadDeposits() {
+  document.getElementById('refreshIcon').classList.add('spin');
+  try {
+    const snap = await db.collection('deposits').get();
+    allDeposits = snap.docs.map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
+    updateSummary();
+    renderTable();
+  } catch(e) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load</div><div style="font-size:13px;color:var(--muted);">${e.message}</div></div></td></tr>`;
+  } finally {
+    document.getElementById('refreshIcon').classList.remove('spin');
+  }
+}
+
+/* ── Summary cards ── */
+function updateSummary() {
+  const pending  = allDeposits.filter(d => d.status==='pending');
+  const approved = allDeposits.filter(d => d.status==='approved');
+  const rejected = allDeposits.filter(d => d.status==='rejected');
+  const totalAmt = approved.reduce((s,d) => s+Number(d.amount||0),0);
+
+  document.getElementById('sc-all').textContent      = allDeposits.length;
+  document.getElementById('sc-pending').textContent  = pending.length;
+  document.getElementById('sc-approved').textContent = approved.length;
+  document.getElementById('sc-rejected').textContent = rejected.length;
+  document.getElementById('sc-total').textContent    = fmtN(totalAmt);
+
+  /* Pending badge on filter button */
+  const cnt = document.getElementById('cnt-pending');
+  if (pending.length > 0) { cnt.textContent = pending.length; cnt.style.display='inline'; }
+  else cnt.style.display='none';
+}
+
+/* ════════════════════
+   FILTER + RENDER
+════════════════════ */
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  return allDeposits.filter(d => {
+    if (activeFilter !== 'all' && d.status !== activeFilter) return false;
+    if (!q) return true;
+    return (d.userName||'').toLowerCase().includes(q)
+        || (d.userEmail||'').toLowerCase().includes(q)
+        || (d.refCode||'').toLowerCase().includes(q)
+        || (d.transferRef||'').toLowerCase().includes(q);
+  });
+}
+
+function renderTable() {
+  const list = getFiltered();
+  const body = document.getElementById('tableBody');
+  body.innerHTML = '';
+
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><div class="empty-title">No deposits found</div></div></td></tr>`;
+    return;
+  }
+
+  list.forEach(d => {
+    const st = d.status || 'pending';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="u-cell">
+          <div class="u-av">${ini(d.userName)}</div>
+          <div>
+            <div class="u-name">${d.userName||'Unknown'}</div>
+            <div class="u-email">${d.userEmail||'—'}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="amt green">${fmtN(d.amount)}</span></td>
+      <td><span class="ref-code">${d.refCode||'—'}</span></td>
+      <td style="font-size:12.5px;color:var(--muted);">${d.transferRef||'—'}</td>
+      <td style="font-size:13px;">${d.bankName||'—'}</td>
+      <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDT(d.createdAt)}</td>
+      <td>
+        ${st==='pending' ? `
+          <button class="act-btn btn-approve" onclick="quickApprove('${d.id}','${d.userId}',${d.amount})">✅ Approve</button>
+          <button class="act-btn btn-reject"  onclick="quickReject('${d.id}')">❌ Reject</button>
+        ` : ''}
+        <button class="act-btn btn-view" onclick="openModal('${d.id}')">View</button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ════════════════════
+   QUICK APPROVE (inline)
+════════════════════ */
+async function quickApprove(docId, userId, amount) {
+  const res = await Swal.fire({
+    icon: 'question',
+    title: `Approve ${fmtN(amount)}?`,
+    html: `<div style="font-size:13px;color:#6B7A99;">This will credit <b>${fmtN(amount)}</b> to the user's balance and mark this deposit as approved.</div>`,
+    showCancelButton: true,
+    confirmButtonText: '✅ Yes, Approve & Credit',
+    confirmButtonColor: '#00C48C',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  await processApprove(docId, userId, amount);
+}
+
+/* ════════════════════
+   QUICK REJECT (inline)
+════════════════════ */
+async function quickReject(docId) {
+  const {value: reason, isConfirmed} = await Swal.fire({
+    icon: 'warning',
+    title: 'Reject this deposit?',
+    html: `<div style="font-size:13px;color:#6B7A99;margin-bottom:10px;">The deposit will be marked as rejected. No funds will be credited.</div>`,
+    input: 'text',
+    inputPlaceholder: 'Reason for rejection (optional)',
+    showCancelButton: true,
+    confirmButtonText: '❌ Reject Deposit',
+    confirmButtonColor: '#FF4D6D',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!isConfirmed) return;
+  await processReject(docId, reason||'');
+}
+
+/* ════════════════════
+   DETAIL MODAL
+════════════════════ */
+function openModal(docId) {
+  activeDocId = docId;
+  const d = allDeposits.find(x => x.id === docId);
+  if (!d) return;
+
+  document.getElementById('modalTitle').textContent = `💳 Deposit — ${fmtN(d.amount)}`;
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="mrow"><span class="mrow-lbl">User</span><span class="mrow-val">${d.userName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Email</span><span class="mrow-val">${d.userEmail||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Amount</span><span class="mrow-val" style="color:var(--success);font-size:18px;font-family:'Sora',sans-serif;">${fmtN(d.amount)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Ref Code</span><span class="mrow-val"><span class="ref-code">${d.refCode||'—'}</span></span></div>
+    <div class="mrow"><span class="mrow-lbl">Transfer Ref</span><span class="mrow-val">${d.transferRef||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Bank</span><span class="mrow-val">${d.bankName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Account No.</span><span class="mrow-val">${d.accountNumber||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Account Name</span><span class="mrow-val">${d.accountName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Payment Method</span><span class="mrow-val">${d.paymentMethod||'Bank Transfer'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Status</span><span class="mrow-val"><span class="badge ${d.status||'pending'}">${(d.status||'pending').charAt(0).toUpperCase()+(d.status||'pending').slice(1)}</span></span></div>
+    ${d.adminNote ? `<div class="mrow"><span class="mrow-lbl">Admin Note</span><span class="mrow-val" style="color:var(--danger);">${d.adminNote}</span></div>` : ''}
+    ${d.approvedAt ? `<div class="mrow"><span class="mrow-lbl">Approved At</span><span class="mrow-val">${fmtDT(d.approvedAt)}</span></div>` : ''}
+    <div class="mrow"><span class="mrow-lbl">Submitted</span><span class="mrow-val">${fmtDT(d.createdAt)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">User ID</span><span class="mrow-val" style="font-size:10.5px;color:var(--muted);">${d.userId||'—'}</span></div>`;
+
+  /* Show credit input + action buttons only for pending */
+  const creditBox = document.getElementById('creditBox');
+  const actions   = document.getElementById('modalActions');
+
+  if (d.status === 'pending') {
+    creditBox.style.display = 'block';
+    document.getElementById('creditInp').value = d.amount || '';
+    actions.innerHTML = `
+      <button class="mbtn mbtn-approve" onclick="modalApprove()">✅ Approve & Credit</button>
+      <button class="mbtn mbtn-reject"  onclick="modalReject()">❌ Reject</button>
+      <button class="mbtn mbtn-cancel"  onclick="closeModalDirect()">Cancel</button>`;
+  } else {
+    creditBox.style.display = 'none';
+    actions.innerHTML = `<button class="mbtn mbtn-cancel" style="background:#E8F0FF;color:var(--primary);" onclick="closeModalDirect()">Close</button>`;
+  }
+
+  document.getElementById('detailModal').classList.add('open');
+}
+
+async function modalApprove() {
+  const d         = allDeposits.find(x => x.id === activeDocId);
+  const creditAmt = parseFloat(document.getElementById('creditInp').value)||0;
+  if (!creditAmt || creditAmt <= 0) {
+    Swal.fire({icon:'warning',title:'Enter a credit amount',confirmButtonColor:'#0052FF'}); return;
+  }
+  const res = await Swal.fire({
+    icon:'question', title:`Approve & Credit ${fmtN(creditAmt)}?`,
+    text:`This will add ${fmtN(creditAmt)} to the user's balance.`,
+    showCancelButton:true, confirmButtonText:'✅ Yes, Approve',
+    confirmButtonColor:'#00C48C', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  closeModalDirect();
+  await processApprove(activeDocId, d.userId, creditAmt);
+}
+
+async function modalReject() {
+  const {value: reason, isConfirmed} = await Swal.fire({
+    icon:'warning', title:'Reject this deposit?',
+    input:'text', inputPlaceholder:'Reason for rejection (optional)',
+    showCancelButton:true, confirmButtonText:'❌ Reject',
+    confirmButtonColor:'#FF4D6D', cancelButtonColor:'#6B7A99'
+  });
+  if (!isConfirmed) return;
+  closeModalDirect();
+  await processReject(activeDocId, reason||'');
+}
+
+/* ════════════════════
+   CORE APPROVE LOGIC
+   Uses Firestore transaction to
+   atomically credit balance + update deposit
+════════════════════ */
+async function processApprove(docId, userId, amount) {
+  Swal.fire({title:'Processing...', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
+  try {
+    await db.runTransaction(async tx => {
+      const userRef = db.collection('users').doc(userId);
+      const depRef  = db.collection('deposits').doc(docId);
+      const uSnap   = await tx.get(userRef);
+
+      if (uSnap.exists) {
+        tx.update(userRef, {
+          balance:        firebase.firestore.FieldValue.increment(amount),
+          totalDeposited: firebase.firestore.FieldValue.increment(amount)
+        });
+      }
+      tx.update(depRef, {
+        status:     'approved',
+        creditedAmt: amount,
+        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        processedBy: auth.currentUser?.uid || 'admin'
+      });
+    });
+
+    /* Update local state */
+    const idx = allDeposits.findIndex(d => d.id === docId);
+    if (idx !== -1) allDeposits[idx].status = 'approved';
+    updateSummary();
+    renderTable();
+
+    Swal.fire({icon:'success', title:'Deposit Approved! ✅', text:`${fmtN(amount)} credited to user's balance.`, timer:2500, showConfirmButton:false});
+  } catch(e) {
+    Swal.fire({icon:'error', title:'Failed', text:e.message, confirmButtonColor:'#0052FF'});
+  }
+}
+
+/* ════════════════════
+   CORE REJECT LOGIC
+════════════════════ */
+async function processReject(docId, reason) {
+  Swal.fire({title:'Processing...', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
+  try {
+    await db.collection('deposits').doc(docId).update({
+      status:     'rejected',
+      adminNote:  reason,
+      updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      processedBy: auth.currentUser?.uid || 'admin'
+    });
+
+    const idx = allDeposits.findIndex(d => d.id === docId);
+    if (idx !== -1) { allDeposits[idx].status = 'rejected'; allDeposits[idx].adminNote = reason; }
+    updateSummary();
+    renderTable();
+
+    Swal.fire({icon:'success', title:'Deposit Rejected', timer:2000, showConfirmButton:false});
+  } catch(e) {
+    Swal.fire({icon:'error', title:'Failed', text:e.message, confirmButtonColor:'#0052FF'});
+  }
+}
+
+/* ── Modal close ── */
+function closeModal(e) { if (e.target === document.getElementById('detailModal')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('detailModal').classList.remove('open'); }
+</script>
+</body>
+</html>

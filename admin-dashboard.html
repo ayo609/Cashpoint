@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Admin Dashboard</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+  :root {
+    --primary: #0052FF;
+    --accent:  #00D4A0;
+    --danger:  #FF4D6D;
+    --warning: #FFB800;
+    --success: #00C48C;
+    --text:    #0D1B3E;
+    --muted:   #6B7A99;
+    --border:  #D8E0F0;
+    --bg:      #F0F4FF;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:var(--bg); color:var(--text);
+    min-height:100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background:white; border-bottom:1px solid var(--border);
+    padding:0 24px; height:64px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 12px rgba(0,82,255,0.06);
+    position:sticky; top:0; z-index:100;
+  }
+  .topbar-brand {
+    display:flex; align-items:center; gap:10px;
+  }
+  .brand-icon {
+    width:38px; height:38px; background:var(--primary); border-radius:11px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; color:white;
+  }
+  .brand-name {
+    font-family:'Sora',sans-serif; font-size:18px; font-weight:700;
+  }
+  .brand-badge {
+    background:var(--danger); color:white; font-size:9px; font-weight:700;
+    padding:2px 6px; border-radius:4px; margin-left:2px;
+  }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .admin-pill {
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg); border-radius:99px; padding:6px 14px;
+    font-size:13px; font-weight:700; color:var(--text);
+  }
+  .admin-av {
+    width:28px; height:28px; border-radius:50%;
+    background:var(--primary); color:white;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:800;
+  }
+  .logout-btn {
+    padding:8px 16px; border-radius:10px; border:none;
+    background:#FFF0F3; color:var(--danger);
+    font-size:13px; font-weight:700; font-family:inherit;
+    cursor:pointer; display:flex; align-items:center; gap:6px;
+    transition:opacity .2s;
+  }
+  .logout-btn:hover { opacity:.8; }
+
+  /* ── PAGE CONTENT ── */
+  .page { max-width:960px; margin:0 auto; padding:32px 20px; }
+
+  /* Welcome */
+  .welcome {
+    background:linear-gradient(135deg,var(--primary),#001c6b);
+    border-radius:20px; padding:28px 28px;
+    color:white; margin-bottom:28px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; flex-wrap:wrap;
+  }
+  .welcome-text h1 {
+    font-family:'Sora',sans-serif; font-size:22px; font-weight:700;
+    margin-bottom:5px;
+  }
+  .welcome-text p { font-size:13.5px; opacity:.8; }
+  .welcome-stats {
+    display:flex; gap:20px; flex-wrap:wrap;
+  }
+  .wstat {
+    text-align:center; background:rgba(255,255,255,0.12);
+    border-radius:13px; padding:12px 20px;
+  }
+  .wstat-val { font-family:'Sora',sans-serif; font-size:22px; font-weight:700; }
+  .wstat-lbl { font-size:11px; opacity:.75; font-weight:600; margin-top:2px; }
+
+  /* Section title */
+  .section-title {
+    font-family:'Sora',sans-serif; font-size:15px; font-weight:700;
+    color:var(--text); margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  /* ── NAV GRID ── */
+  .nav-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(200px,1fr));
+    gap:14px; margin-bottom:32px;
+  }
+  .nav-card {
+    background:white; border-radius:18px; padding:22px 20px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+    cursor:pointer; text-decoration:none; color:inherit;
+    border:2px solid transparent;
+    box-shadow:0 4px 16px rgba(0,82,255,0.07);
+    transition:transform .18s, box-shadow .18s, border-color .18s;
+    position:relative; overflow:hidden;
+  }
+  .nav-card:hover {
+    transform:translateY(-4px);
+    box-shadow:0 12px 32px rgba(0,82,255,0.14);
+    border-color:var(--card-color, var(--primary));
+  }
+  .nav-card-icon {
+    width:48px; height:48px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+  }
+  .nav-card-title {
+    font-family:'Sora',sans-serif; font-size:15px; font-weight:700;
+  }
+  .nav-card-desc {
+    font-size:12px; color:var(--muted); font-weight:600; line-height:1.5;
+  }
+  .nav-card-arrow {
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    font-size:16px; color:var(--border);
+    transition:color .2s, transform .2s;
+  }
+  .nav-card:hover .nav-card-arrow {
+    color:var(--card-color, var(--primary));
+    transform:translateY(-50%) translateX(3px);
+  }
+  /* Badge on nav card */
+  .nav-badge {
+    position:absolute; top:14px; right:14px;
+    background:var(--danger); color:white;
+    font-size:10px; font-weight:700;
+    padding:2px 8px; border-radius:99px;
+    min-width:20px; text-align:center;
+  }
+  .nav-badge.hidden { display:none; }
+
+  /* Colors */
+  .c-blue   { --card-color:#0052FF; background:#E8F0FF; }
+  .c-green  { --card-color:#00C48C; background:#E8FFF6; }
+  .c-orange { --card-color:#FFB800; background:#FFF8E8; }
+  .c-red    { --card-color:#FF4D6D; background:#FFF0F3; }
+  .c-purple { --card-color:#7C3AED; background:#F3EFFF; }
+  .c-teal   { --card-color:#00D4A0; background:#E6FBF6; }
+
+  /* ── QUICK STATS ROW ── */
+  .stats-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px; margin-bottom:28px;
+  }
+  .stat-card {
+    background:white; border-radius:15px; padding:18px 16px;
+    box-shadow:0 3px 12px rgba(0,82,255,0.06);
+  }
+  .stat-icon { font-size:22px; margin-bottom:8px; }
+  .stat-val {
+    font-family:'Sora',sans-serif; font-size:20px; font-weight:700;
+    color:var(--text); margin-bottom:3px;
+  }
+  .stat-lbl { font-size:11.5px; color:var(--muted); font-weight:600; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">💰</div>
+    <div>
+      <span class="brand-name">Cashpoint</span>
+      <span class="brand-badge">ADMIN</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="admin-pill">
+      <div class="admin-av" id="adminAv">A</div>
+      <span id="adminEmail">Admin</span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- Welcome banner -->
+  <div class="welcome">
+    <div class="welcome-text">
+      <h1>👋 Welcome, Admin</h1>
+      <p>Manage everything about your Cashpoint platform from here.</p>
+    </div>
+    <div class="welcome-stats">
+      <div class="wstat">
+        <div class="wstat-val" id="s-users">—</div>
+        <div class="wstat-lbl">Total Users</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="s-pending">—</div>
+        <div class="wstat-lbl">Pending Deposits</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="s-active">—</div>
+        <div class="wstat-lbl">Active Plans</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick stats -->
+  <div class="section-title">📊 Overview</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-val" id="st-users">—</div>
+      <div class="stat-lbl">Total Users</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💳</div>
+      <div class="stat-val" id="st-deposits">—</div>
+      <div class="stat-lbl">Total Deposits</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-val" id="st-pending">—</div>
+      <div class="stat-lbl">Pending Deposits</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💸</div>
+      <div class="stat-val" id="st-withdrawals">—</div>
+      <div class="stat-lbl">Pending Withdrawals</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📈</div>
+      <div class="stat-val" id="st-plans">—</div>
+      <div class="stat-lbl">Active Plans</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎁</div>
+      <div class="stat-val" id="st-refs">—</div>
+      <div class="stat-lbl">Referral Bonuses</div>
+    </div>
+  </div>
+
+  <!-- Navigation cards -->
+  <div class="section-title">⚙️ Manage</div>
+  <div class="nav-grid">
+
+    <a class="nav-card" href="admin-users.html">
+      <div class="nav-card-icon c-blue">👥</div>
+      <div>
+        <div class="nav-card-title">Users</div>
+        <div class="nav-card-desc">View, fund, suspend & delete user accounts</div>
+      </div>
+      <i class="fas fa-chevron-right nav-card-arrow"></i>
+    </a>
+
+    <a class="nav-card" href="admin-deposits.html">
+      <div class="nav-card-icon c-green">💳</div>
+      <div>
+        <div class="nav-card-title">Deposits</div>
+        <div class="nav-card-desc">Approve or reject pending deposit requests</div>
+      </div>
+      <span class="nav-badge" id="depBadge">0</span>
+      <i class="fas fa-chevron-right nav-card-arrow"></i>
+    </a>
+
+    <a class="nav-card" href="admin-withdrawals.html">
+      <div class="nav-card-icon c-orange">💸</div>
+      <div>
+        <div class="nav-card-title">Withdrawals</div>
+        <div class="nav-card-desc">Process pending withdrawal requests</div>
+      </div>
+      <span class="nav-badge" id="wdlBadge">0</span>
+      <i class="fas fa-chevron-right nav-card-arrow"></i>
+    </a>
+
+    <a class="nav-card" href="admin-investments.html">
+      <div class="nav-card-icon c-purple">📈</div>
+      <div>
+        <div class="nav-card-title">Investments</div>
+        <div class="nav-card-desc">Monitor all active and completed plans</div>
+      </div>
+      <i class="fas fa-chevron-right nav-card-arrow"></i>
+    </a>
+
+    <a class="nav-card" href="admin-referrals.html">
+      <div class="nav-card-icon c-teal">🎁</div>
+      <div>
+        <div class="nav-card-title">Referrals</div>
+        <div class="nav-card-desc">View all referral bonus transactions</div>
+      </div>
+      <i class="fas fa-chevron-right nav-card-arrow"></i>
+    </a>
+
+    <a class="nav-card" href="admin-support.html">
+      <div class="nav-card-icon c-red">🎧</div>
+      <div>
+        <div class="nav-card-title">Support Chat</div>
+        <div class="nav-card-desc">Reply to user support messages</div>
+      </div>
+      <i class="fas fa-chevron-right nav-card-arrow"></i>
+    </a>
+
+  </div>
+
+</div><!-- end page -->
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ── Show admin email in topbar ── */
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'admin-login.html';
+    return;
+  }
+  const email = user.email || 'Admin';
+  document.getElementById('adminEmail').textContent = email.split('@')[0];
+  document.getElementById('adminAv').textContent = email.charAt(0).toUpperCase();
+  loadStats();
+});
+
+/* ── Load quick stats ── */
+async function loadStats() {
+  try {
+    const [users, deposits, withdrawals, plans, refs] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('deposits').get(),
+      db.collection('withdrawals').get(),
+      db.collection('investments').where('active','==',true).get(),
+      db.collection('referral_bonuses').get()
+    ]);
+
+    const pendingDep = deposits.docs.filter(d => d.data().status === 'pending').length;
+    const pendingWdl = withdrawals.docs.filter(d => d.data().status === 'pending').length;
+
+    /* Welcome banner */
+    document.getElementById('s-users').textContent   = users.size;
+    document.getElementById('s-pending').textContent = pendingDep;
+    document.getElementById('s-active').textContent  = plans.size;
+
+    /* Stat cards */
+    document.getElementById('st-users').textContent       = users.size;
+    document.getElementById('st-deposits').textContent    = deposits.size;
+    document.getElementById('st-pending').textContent     = pendingDep;
+    document.getElementById('st-withdrawals').textContent = pendingWdl;
+    document.getElementById('st-plans').textContent       = plans.size;
+    document.getElementById('st-refs').textContent        = refs.size;
+
+    /* Badges on nav cards */
+    const depBadge = document.getElementById('depBadge');
+    const wdlBadge = document.getElementById('wdlBadge');
+
+    if (pendingDep > 0) { depBadge.textContent = pendingDep; depBadge.classList.remove('hidden'); }
+    else depBadge.classList.add('hidden');
+
+    if (pendingWdl > 0) { wdlBadge.textContent = pendingWdl; wdlBadge.classList.remove('hidden'); }
+    else wdlBadge.classList.add('hidden');
+
+  } catch(e) {
+    console.error('Stats error:', e);
+  }
+}
+
+/* ── Logout ── */
+function doLogout() {
+  auth.signOut().then(() => {
+    window.location.href = 'admin-login.html';
+  });
+}
+</script>
+</body>
+</html>

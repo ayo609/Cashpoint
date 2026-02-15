@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Admin Login</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; }
+  body {
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:linear-gradient(135deg,#001c6b 0%,#0039b3 50%,#0a0a2e 100%);
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; padding:20px;
+  }
+  .card {
+    background:white; border-radius:24px; padding:38px 32px;
+    width:100%; max-width:400px;
+    box-shadow:0 32px 80px rgba(0,0,0,0.4);
+    animation:rise .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+  .card-header{text-align:center;margin-bottom:28px;}
+  .shield{width:68px;height:68px;border-radius:20px;margin:0 auto 14px;background:linear-gradient(135deg,#0052FF,#0039b3);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 10px 28px rgba(0,82,255,0.35);}
+  .card-title{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;color:#0D1B3E;margin-bottom:4px;}
+  .card-sub{font-size:13px;color:#6B7A99;font-weight:600;}
+  .dots-row{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:20px;}
+  .dot{width:10px;height:10px;border-radius:50%;border:2px solid #D8E0F0;background:white;transition:all .3s;}
+  .dot.fail{background:#FF4D6D;border-color:#FF4D6D;}
+  .dot-label{font-size:11px;font-weight:700;color:#6B7A99;margin-left:4px;}
+  .err-box{display:none;background:#FFF0F3;border:1.5px solid #ffd0d9;border-radius:11px;padding:11px 14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#FF4D6D;align-items:center;gap:8px;}
+  .err-box.show{display:flex;}
+  .warn-box{display:none;background:#FFF8E8;border:1.5px solid #ffe0a0;border-radius:11px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;font-weight:700;color:#856404;align-items:center;gap:8px;}
+  .warn-box.show{display:flex;}
+  .info-box{display:none;background:#F0F4FF;border:1.5px solid #c8d6ff;border-radius:11px;padding:14px;margin-bottom:16px;font-size:12.5px;color:#0D1B3E;line-height:1.7;}
+  .info-box.show{display:block;}
+  .info-box strong{color:#0052FF;}
+  .field{margin-bottom:14px;}
+  .field-label{font-size:11.5px;font-weight:700;color:#6B7A99;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:block;}
+  .field-row{display:flex;align-items:center;border:2px solid #D8E0F0;border-radius:12px;overflow:hidden;transition:border-color .2s;}
+  .field-row:focus-within{border-color:#0052FF;}
+  .field-row.shake{animation:shake .35s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+  .field-pfx{padding:0 13px;font-size:16px;color:#6B7A99;background:#F8FAFF;border-right:2px solid #D8E0F0;height:50px;display:flex;align-items:center;flex-shrink:0;}
+  .field-input{flex:1;padding:13px 14px;font-size:15px;font-weight:600;font-family:inherit;border:none;outline:none;color:#0D1B3E;min-width:0;}
+  .field-input::placeholder{color:#D8E0F0;font-weight:400;}
+  .eye-btn{padding:0 13px;background:none;border:none;cursor:pointer;color:#6B7A99;font-size:16px;height:50px;display:flex;align-items:center;}
+  .submit-btn{width:100%;padding:15px;border:none;border-radius:13px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;color:white;background:linear-gradient(135deg,#0052FF,#0039b3);box-shadow:0 7px 24px rgba(0,82,255,0.35);display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .15s,box-shadow .15s,opacity .2s;margin-top:6px;}
+  .submit-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,82,255,0.45);}
+  .submit-btn:disabled{opacity:.55;cursor:not-allowed;}
+  .btn-spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .submit-btn.loading .btn-text{display:none;}
+  .submit-btn.loading .btn-spinner{display:block;}
+  .submit-btn.loading i{display:none;}
+  .footer-note{text-align:center;margin-top:18px;font-size:11.5px;color:#6B7A99;font-weight:600;line-height:1.6;}
+  #lockScreen{display:none;text-align:center;color:white;}
+  #lockScreen.show{display:block;}
+  .lock-countdown{font-family:'Sora',sans-serif;font-size:36px;font-weight:700;color:#FFB800;margin:14px 0;}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div style="font-size:60px;margin-bottom:12px;">🔒</div>
+  <div style="font-family:'Sora',sans-serif;font-size:24px;font-weight:700;margin-bottom:8px;">Access Locked</div>
+  <div style="font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:6px;">Too many failed attempts. Try again in:</div>
+  <div class="lock-countdown" id="lockCountdown">30:00</div>
+  <div style="font-size:13px;color:rgba(255,255,255,0.6);">All attempts are logged for security.</div>
+</div>
+
+<!-- LOGIN CARD -->
+<div class="card" id="loginCard">
+  <div class="card-header">
+    <div class="shield">🛡️</div>
+    <div class="card-title">Admin Login</div>
+    <div class="card-sub">Cashpoint Control Panel · Restricted</div>
+  </div>
+
+  <div class="dots-row" id="dotsRow">
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+    <div class="dot" id="d4"></div>
+    <div class="dot" id="d5"></div>
+    <span class="dot-label" id="dotLabel">5 attempts remaining</span>
+  </div>
+
+  <div class="err-box" id="errBox">
+    <i class="fas fa-times-circle"></i>
+    <span id="errText">Invalid credentials.</span>
+  </div>
+
+  <div class="warn-box" id="warnBox">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span id="warnText"></span>
+  </div>
+
+  <div class="info-box" id="infoBox">
+    <div style="font-size:14px;font-weight:800;color:#0D1B3E;margin-bottom:8px;">✅ Password correct — isAdmin not set yet</div>
+    Your account exists but is not marked as admin. Do this once:<br><br>
+    1. Open <strong>Firebase Console → Firestore Database</strong><br>
+    2. Click the <strong>users</strong> collection<br>
+    3. Find your document (search by your email)<br>
+    4. Click <strong>+ Add field</strong>:<br>
+    &nbsp;&nbsp;&nbsp;Field: <strong>isAdmin</strong> | Type: <strong>boolean</strong> | Value: <strong>true</strong><br>
+    5. Click <strong>Save</strong> then log in again
+  </div>
+
+  <div class="field">
+    <label class="field-label">Admin Email</label>
+    <div class="field-row" id="rowEmail">
+      <div class="field-pfx"><i class="fas fa-envelope"></i></div>
+      <input class="field-input" id="emailInput" type="email" placeholder="your@email.com"
+        autocomplete="email"
+        onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()"/>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="field-label">Password</label>
+    <div class="field-row" id="rowPass">
+      <div class="field-pfx"><i class="fas fa-lock"></i></div>
+      <input class="field-input" id="passInput" type="password" placeholder="Enter your password"
+        autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="eye-btn" onclick="togglePw()" tabindex="-1" id="eyeBtn">
+        <i class="fas fa-eye"></i>
+      </button>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="loginBtn" onclick="doLogin()">
+    <i class="fas fa-shield-alt"></i>
+    <span class="btn-text">Access Admin Panel</span>
+    <div class="btn-spinner"></div>
+  </button>
+
+  <div class="footer-note">
+    <i class="fas fa-lock" style="color:#00C48C;"></i>
+    All login attempts are logged · Unauthorized access is monitored
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+const MAX_ATTEMPTS = 5;
+const LOCK_MINS    = 30;
+const LOCK_KEY     = 'cp_adm_lock';
+const ATTEMPTS_KEY = 'cp_adm_att';
+let fails = 0;
+
+/* ── ON LOAD: sign out everything first, then set up page ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  /* Sign out any existing session — prevents regular users from
+     accidentally hitting this page and being auto-redirected */
+  try { await auth.signOut(); } catch(e) {}
+
+  if (isLocked()) { showLock(); return; }
+
+  fails = parseInt(sessionStorage.getItem(ATTEMPTS_KEY) || '0');
+  updateDots();
+
+  setTimeout(() => document.getElementById('emailInput').focus(), 200);
+});
+
+/* ── MAIN LOGIN ── */
+async function doLogin() {
+  if (isLocked()) { showLock(); return; }
+
+  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+  const pass  = document.getElementById('passInput').value;
+  const btn   = document.getElementById('loginBtn');
+
+  hide('errBox'); hide('warnBox'); hide('infoBox');
+
+  if (!email) { shake('rowEmail'); showErr('Please enter your email address.'); return; }
+  if (!pass)  { shake('rowPass');  showErr('Please enter your password.'); return; }
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  try {
+    /* Step 1 — Firebase Auth sign in */
+    const cred = await auth.signInWithEmailAndPassword(email, pass);
+    const uid  = cred.user.uid;
+
+    /* Step 2 — Read Firestore user doc to check isAdmin */
+    let snap;
+    try {
+      snap = await db.collection('users').doc(uid).get();
+    } catch(fsErr) {
+      await auth.signOut();
+      showErr('Could not reach database. Check your internet and try again.');
+      btn.disabled = false; btn.classList.remove('loading');
+      return;
+    }
+
+    /* No document found */
+    if (!snap.exists) {
+      await auth.signOut();
+      logAttempt(email, uid, 'no_document');
+      showErr('No user profile found. Contact the developer.');
+      bumpFail();
+      btn.disabled = false; btn.classList.remove('loading');
+      return;
+    }
+
+    /* isAdmin not true */
+    if (snap.data().isAdmin !== true) {
+      await auth.signOut();
+      logAttempt(email, uid, 'not_admin');
+      document.getElementById('infoBox').classList.add('show');
+      btn.disabled = false; btn.classList.remove('loading');
+      return;
+    }
+
+    /* ✅ SUCCESS — signed in and isAdmin confirmed */
+    logAttempt(email, uid, 'success');
+    sessionStorage.removeItem(ATTEMPTS_KEY);
+    /* Redirect — user stays signed into Firebase for admin.html to verify */
+    window.location.href = 'admin-dashboard.html';
+
+  } catch(err) {
+    try { await auth.signOut(); } catch(e) {}
+    logAttempt(email, null, err.code || 'unknown');
+
+    let msg = 'Incorrect email or password.';
+    if (err.code === 'auth/user-not-found')        msg = 'No account found with this email.';
+    if (err.code === 'auth/wrong-password')         msg = 'Wrong password. Try again.';
+    if (err.code === 'auth/invalid-credential')     msg = 'Incorrect email or password.';
+    if (err.code === 'auth/invalid-email')          msg = 'Please enter a valid email address.';
+    if (err.code === 'auth/too-many-requests')      msg = 'Too many attempts. Firebase has blocked this account temporarily.';
+    if (err.code === 'auth/network-request-failed') msg = 'Network error. Check your connection.';
+
+    showErr(msg);
+    bumpFail();
+    btn.disabled = false; btn.classList.remove('loading');
+  }
+}
+
+/* ── Attempt tracking ── */
+function bumpFail() {
+  fails++;
+  sessionStorage.setItem(ATTEMPTS_KEY, fails);
+  updateDots();
+  const rem = MAX_ATTEMPTS - fails;
+  if (fails >= MAX_ATTEMPTS) {
+    localStorage.setItem(LOCK_KEY, Date.now() + LOCK_MINS * 60000);
+    setTimeout(showLock, 600);
+    return;
+  }
+  if (rem <= 2) showWarn(`⚠️ ${rem} attempt${rem!==1?'s':''} left before this device is locked for ${LOCK_MINS} minutes.`);
+}
+
+function updateDots() {
+  for (let i=1;i<=5;i++) {
+    document.getElementById('d'+i).className='dot'+(i<=fails?' fail':'');
+  }
+  const rem = Math.max(0, MAX_ATTEMPTS - fails);
+  document.getElementById('dotLabel').textContent =
+    rem>0 ? `${rem} attempt${rem!==1?'s':''} remaining` : 'Locked';
+}
+
+/* ── Lock ── */
+function isLocked() { return Date.now() < parseInt(localStorage.getItem(LOCK_KEY)||'0'); }
+
+function showLock() {
+  document.getElementById('loginCard').style.display='none';
+  document.getElementById('lockScreen').classList.add('show');
+  const until = parseInt(localStorage.getItem(LOCK_KEY)||'0');
+  (function tick(){
+    const left=until-Date.now();
+    if(left<=0){localStorage.removeItem(LOCK_KEY);sessionStorage.removeItem(ATTEMPTS_KEY);location.reload();return;}
+    const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
+    document.getElementById('lockCountdown').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    setTimeout(tick,1000);
+  })();
+}
+
+/* ── Audit log ── */
+function logAttempt(email, uid, result) {
+  try {
+    db.collection('admin_login_attempts').add({
+      email, uid:uid||'unknown', result,
+      userAgent:navigator.userAgent,
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e){}
+}
+
+/* ── UI helpers ── */
+function showErr(msg){document.getElementById('errText').textContent=msg;document.getElementById('errBox').classList.add('show');}
+function showWarn(msg){document.getElementById('warnText').textContent=msg;document.getElementById('warnBox').classList.add('show');}
+function hide(id){document.getElementById(id).classList.remove('show');}
+function shake(id){const el=document.getElementById(id);el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);}
+function togglePw(){
+  const inp=document.getElementById('passInput');
+  const btn=document.getElementById('eyeBtn');
+  inp.type=inp.type==='password'?'text':'password';
+  btn.innerHTML=`<i class="fas fa-eye${inp.type==='password'?'':'-slash'}"></i>`;
+}
+</script>
+</body>
+</html>

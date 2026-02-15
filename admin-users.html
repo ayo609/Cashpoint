@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Manage Users</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --primary:#0052FF;--accent:#00D4A0;--danger:#FF4D6D;
+  --warning:#FFB800;--success:#00C48C;--text:#0D1B3E;
+  --muted:#6B7A99;--border:#D8E0F0;--bg:#F0F4FF;--card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* TOP BAR */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,82,255,0.06);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);text-decoration:none;transition:background .2s;}
+.back-btn:hover{background:var(--border);}
+.page-title{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;}
+.user-count{font-size:12px;color:var(--muted);font-weight:700;background:var(--bg);padding:4px 10px;border-radius:99px;}
+
+/* FILTER BAR */
+.filter-bar{background:white;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:0 14px;flex:1;min-width:200px;max-width:340px;transition:border-color .2s;}
+.search-wrap:focus-within{border-color:var(--primary);}
+.search-wrap i{color:var(--muted);font-size:14px;flex-shrink:0;}
+.search-input{flex:1;border:none;background:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);padding:10px 0;}
+.filter-btns{display:flex;gap:6px;}
+.fbtn{padding:8px 16px;border-radius:9px;border:2px solid var(--border);background:white;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .2s;}
+.fbtn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.refresh-btn{width:38px;height:38px;border-radius:10px;border:2px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;transition:all .2s;flex-shrink:0;}
+.refresh-btn:hover{border-color:var(--primary);color:var(--primary);}
+.spin{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TABLE */
+.table-wrap{padding:20px;overflow-x:auto;}
+.table{width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,82,255,0.07);}
+.table th{padding:13px 16px;text-align:left;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:#F8FAFF;border-bottom:1px solid var(--border);}
+.table td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13.5px;}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:#FAFBFF;}
+
+/* User cell */
+.u-cell{display:flex;align-items:center;gap:11px;}
+.u-av{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#001c6b);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0;}
+.u-av.suspended{background:linear-gradient(135deg,#aaa,#666);}
+.u-name{font-size:13.5px;font-weight:700;color:var(--text);}
+.u-email{font-size:11.5px;color:var(--muted);font-weight:600;}
+.u-phone{font-size:11px;color:var(--muted);}
+
+/* Amounts */
+.amt{font-weight:800;font-size:13.5px;}
+.amt.green{color:var(--success);}
+.amt.blue{color:var(--primary);}
+.amt.gold{color:var(--warning);}
+
+/* Status badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge.active{background:#E8FFF6;color:var(--success);}
+.badge.suspended{background:#FFF0F3;color:var(--danger);}
+
+/* Action buttons */
+.act-btn{padding:7px 14px;border-radius:9px;border:none;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;}
+.act-btn:hover{opacity:.82;}
+.act-manage{background:#E8F0FF;color:var(--primary);}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.empty-sub{font-size:13px;}
+
+/* Skeleton */
+.skel{height:14px;background:linear-gradient(90deg,#f0f4ff 25%,#e0e8ff 50%,#f0f4ff 75%);background-size:200% 100%;border-radius:6px;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ═══════════════════════════════
+   SIDE DRAWER
+═══════════════════════════════ */
+.overlay{position:fixed;inset:0;background:rgba(13,27,62,0.45);backdrop-filter:blur(3px);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(500px,100vw);background:white;z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.16,1,.3,1);box-shadow:-12px 0 50px rgba(0,82,255,0.12);}
+.overlay.open .drawer{transform:translateX(0);}
+
+/* Drawer head */
+.dhead{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:13px;flex-shrink:0;}
+.dhead-av{width:50px;height:50px;border-radius:15px;background:linear-gradient(135deg,var(--primary),#001c6b);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;}
+.dhead-name{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;}
+.dhead-email{font-size:12px;color:var(--muted);font-weight:600;}
+.dhead-status{font-size:11px;font-weight:700;margin-top:3px;}
+.dhead-status.active{color:var(--success);}
+.dhead-status.suspended{color:var(--danger);}
+.dclose{margin-left:auto;width:32px;height:32px;border-radius:9px;background:var(--bg);border:none;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* Drawer tabs */
+.dtabs{display:flex;border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto;flex-shrink:0;}
+.dtab{padding:13px 16px;font-size:13px;font-weight:700;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.dtab.active{color:var(--primary);border-color:var(--primary);}
+
+/* Drawer body */
+.dbody{flex:1;overflow-y:auto;padding:20px;}
+.dbody::-webkit-scrollbar{width:4px;}
+.dbody::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+/* Info rows */
+.irow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);gap:12px;}
+.irow:last-child{border-bottom:none;}
+.irow-lbl{font-size:12px;font-weight:700;color:var(--muted);}
+.irow-val{font-size:13.5px;font-weight:700;text-align:right;word-break:break-all;}
+
+/* Mini stats */
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.mstat{background:var(--bg);border-radius:12px;padding:13px;text-align:center;}
+.mstat-val{font-family:'Sora',sans-serif;font-size:16px;font-weight:700;line-height:1;margin-bottom:3px;}
+.mstat-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+
+/* Section label */
+.slabel{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:18px;}
+
+/* Input group */
+.inp-group{background:var(--bg);border-radius:13px;padding:14px;margin-bottom:12px;}
+.inp-group-title{font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.inp-row{display:flex;gap:8px;}
+.inp{flex:1;padding:11px 13px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;outline:none;color:var(--text);background:white;transition:border-color .2s;}
+.inp:focus{border-color:var(--primary);}
+.inp-btn{padding:11px 18px;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+.inp-btn:hover{opacity:.85;}
+.inp-btn.green{background:var(--success);color:white;}
+.inp-btn.red{background:var(--danger);color:white;}
+
+/* History items */
+.hist-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.hist-icon.approved,.hist-icon.active{background:#E8FFF6;}
+.hist-icon.pending{background:#FFF8E8;}
+.hist-icon.rejected,.hist-icon.inactive{background:#FFF0F3;}
+.hist-info{flex:1;}
+.hist-amount{font-size:13.5px;font-weight:700;}
+.hist-date{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px;}
+.hist-badge{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap;}
+.hist-badge.approved,.hist-badge.active{background:#E8FFF6;color:var(--success);}
+.hist-badge.pending{background:#FFF8E8;color:var(--warning);}
+.hist-badge.rejected,.hist-badge.inactive{background:#FFF0F3;color:var(--danger);}
+
+/* Ref tree */
+.ref-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bg);border-radius:11px;margin-bottom:7px;}
+.ref-av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--primary),var(--accent));color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
+.ref-name{font-size:13px;font-weight:700;}
+.ref-sub{font-size:11px;color:var(--muted);}
+.lbadge{margin-left:auto;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:700;}
+.lbadge.l1{background:#E8F0FF;color:var(--primary);}
+.lbadge.l2{background:#E8FFF6;color:var(--success);}
+.lbadge.l3{background:#FFF8E8;color:var(--warning);}
+
+/* Suspend buttons */
+.suspend-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.sdays-btn{padding:8px 16px;border:2px solid var(--border);border-radius:9px;background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;}
+.sdays-btn:hover{border-color:var(--warning);color:var(--warning);}
+
+/* Danger buttons */
+.danger-btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s;}
+.danger-btn:hover{opacity:.85;}
+.danger-btn.suspend{background:#FFF8E8;color:var(--warning);border:2px solid #ffe0a0;}
+.danger-btn.unsuspend{background:#E8FFF6;color:var(--success);border:2px solid #b0f0d8;}
+.danger-btn.delete{background:#FFF0F3;color:var(--danger);border:2px solid #ffd0d9;margin-top:10px;}
+
+.note-inp{width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:13px;resize:none;outline:none;height:64px;margin-top:10px;transition:border-color .2s;}
+.note-inp:focus{border-color:var(--primary);}
+
+.plan-card{background:var(--bg);border-radius:13px;padding:14px;margin-bottom:10px;}
+.plan-bar-bg{height:5px;background:var(--border);border-radius:99px;overflow:hidden;margin:8px 0 4px;}
+.plan-bar{height:100%;background:var(--primary);border-radius:99px;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back-btn" href="admin-dashboard.html"><i class="fas fa-arrow-left"></i></a>
+    <div>
+      <div class="page-title">👥 Manage Users</div>
+    </div>
+  </div>
+  <span class="user-count" id="userCount">Loading...</span>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-search"></i>
+    <input class="search-input" id="searchInput" placeholder="Search name, email, username, phone..." oninput="filterUsers()"/>
+  </div>
+  <div class="filter-btns">
+    <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('active',this)">Active</button>
+    <button class="fbtn" onclick="setFilter('suspended',this)">Suspended</button>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadUsers()" title="Refresh">
+    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+  </button>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table class="table" id="usersTable">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Balance</th>
+        <th>Invested</th>
+        <th>Earnings</th>
+        <th>Refs</th>
+        <th>Status</th>
+        <th>Joined</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="usersBody">
+      <!-- skeleton rows -->
+      <tr><td><div class="skel" style="width:160px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:30px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:70px;"></div></td></tr>
+      <tr><td><div class="skel" style="width:140px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:30px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:70px;"></div></td></tr>
+      <tr><td><div class="skel" style="width:150px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:30px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:70px;"></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SIDE DRAWER OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeDrawer(event)">
+  <div class="drawer" id="drawer">
+
+    <!-- Head -->
+    <div class="dhead">
+      <div class="dhead-av" id="dAv">U</div>
+      <div style="flex:1;min-width:0;">
+        <div class="dhead-name" id="dName">—</div>
+        <div class="dhead-email" id="dEmail">—</div>
+        <div class="dhead-status" id="dStatus">●  Active</div>
+      </div>
+      <button class="dclose" onclick="closeDrawerDirect()">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="dtabs">
+      <div class="dtab active" onclick="openTab('overview',this)">Overview</div>
+      <div class="dtab" onclick="openTab('balance',this)">Balance</div>
+      <div class="dtab" onclick="openTab('deposits',this)">Deposits</div>
+      <div class="dtab" onclick="openTab('withdrawals',this)">Withdrawals</div>
+      <div class="dtab" onclick="openTab('plans',this)">Plans</div>
+      <div class="dtab" onclick="openTab('referrals',this)">Referrals</div>
+      <div class="dtab" onclick="openTab('danger',this)">⚠️</div>
+    </div>
+
+    <!-- Body -->
+    <div class="dbody" id="dbody">
+      <div class="empty"><div class="empty-icon">👤</div><div class="empty-title">Select a tab</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ── Auth check ── */
+auth.onAuthStateChanged(user => {
+  if (!user) { window.location.href = 'admin-login.html'; return; }
+  loadUsers();
+});
+
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let allUsers     = [];
+let activeFilter = 'all';
+let activeUID    = null;
+let activeUser   = null;
+
+/* ════════════════════════════════
+   HELPERS
+════════════════════════════════ */
+const fmtN = n => '₦' + Number(n||0).toLocaleString('en-NG');
+const fmtS = n => { const v=Number(n||0); if(v>=1e6)return '₦'+(v/1e6).toFixed(1)+'M'; if(v>=1e3)return '₦'+(v/1e3).toFixed(0)+'K'; return fmtN(v); };
+const fmtD = ts => { if(!ts)return '—'; try{ const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString('en-NG',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){return '—';} };
+const fmtDT = ts => { if(!ts)return '—'; try{ const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString('en-NG',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return '—';} };
+const ini = n => (n||'U').charAt(0).toUpperCase();
+
+/* ════════════════════════════════
+   LOAD ALL USERS
+════════════════════════════════ */
+async function loadUsers() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spin');
+
+  try {
+    const snap = await db.collection('users').get();
+    allUsers = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
+
+    document.getElementById('userCount').textContent = `${allUsers.length} users`;
+    renderTable();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('usersBody').innerHTML =
+      `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load users</div><div class="empty-sub">${e.message}</div></div></td></tr>`;
+  } finally {
+    icon.classList.remove('spin');
+  }
+}
+
+/* ════════════════════════════════
+   FILTER + SEARCH
+════════════════════════════════ */
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function filterUsers() { renderTable(); }
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  return allUsers.filter(u => {
+    /* Status filter */
+    if (activeFilter === 'active'    && u.suspended)  return false;
+    if (activeFilter === 'suspended' && !u.suspended) return false;
+    /* Search */
+    if (!q) return true;
+    return (u.fullName||'').toLowerCase().includes(q)
+        || (u.email||'').toLowerCase().includes(q)
+        || (u.username||'').toLowerCase().includes(q)
+        || (u.phone||'').includes(q);
+  });
+}
+
+/* ════════════════════════════════
+   RENDER TABLE
+════════════════════════════════ */
+function renderTable() {
+  const list = getFiltered();
+  const body = document.getElementById('usersBody');
+  body.innerHTML = '';
+
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">No users found</div></div></td></tr>`;
+    return;
+  }
+
+  list.forEach(u => {
+    const susp = u.suspended === true;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="u-cell">
+          <div class="u-av ${susp?'suspended':''}">${ini(u.fullName||u.username)}</div>
+          <div>
+            <div class="u-name">${u.fullName||u.username||'—'}</div>
+            <div class="u-email">${u.email||'—'}</div>
+            ${u.phone ? `<div class="u-phone">${u.phone}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td><span class="amt green">${fmtS(u.balance)}</span></td>
+      <td><span class="amt blue">${fmtS(u.totalInvested)}</span></td>
+      <td><span class="amt gold">${fmtS(u.totalEarnings)}</span></td>
+      <td style="font-weight:700;">${u.referralCount||0}</td>
+      <td><span class="badge ${susp?'suspended':'active'}">${susp?'🔴 Suspended':'🟢 Active'}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${fmtD(u.createdAt)}</td>
+      <td><button class="act-btn act-manage" onclick="openDrawer('${u.id}')">Manage</button></td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ════════════════════════════════
+   DRAWER OPEN / CLOSE
+════════════════════════════════ */
+function openDrawer(uid) {
+  activeUID  = uid;
+  activeUser = allUsers.find(u => u.id === uid) || {};
+  const u    = activeUser;
+  const susp = u.suspended === true;
+
+  document.getElementById('dAv').textContent    = ini(u.fullName||u.username);
+  document.getElementById('dName').textContent  = u.fullName || u.username || '—';
+  document.getElementById('dEmail').textContent = u.email || '—';
+
+  const statusEl = document.getElementById('dStatus');
+  statusEl.textContent = susp ? '● Suspended' : '● Active';
+  statusEl.className   = 'dhead-status ' + (susp ? 'suspended' : 'active');
+
+  /* Reset tabs */
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.dtab').classList.add('active');
+
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  openTab('overview', document.querySelector('.dtab'));
+}
+
+function closeDrawer(e) {
+  if (e.target === document.getElementById('overlay')) closeDrawerDirect();
+}
+function closeDrawerDirect() {
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ════════════════════════════════
+   TAB SWITCHER
+════════════════════════════════ */
+function openTab(tab, el) {
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTab(tab);
+}
+
+async function renderTab(tab) {
+  const body = document.getElementById('dbody');
+  const u    = activeUser;
+  const uid  = activeUID;
+
+  body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>`;
+
+  /* ── OVERVIEW ── */
+  if (tab === 'overview') {
+    body.innerHTML = `
+      <div class="mini-stats">
+        <div class="mstat"><div class="mstat-val" style="color:var(--success);">${fmtS(u.balance)}</div><div class="mstat-lbl">Balance</div></div>
+        <div class="mstat"><div class="mstat-val">${fmtS(u.totalEarnings)}</div><div class="mstat-lbl">Earned</div></div>
+        <div class="mstat"><div class="mstat-val">${u.referralCount||0}</div><div class="mstat-lbl">Referrals</div></div>
+      </div>
+      <div class="irow"><span class="irow-lbl">Full Name</span><span class="irow-val">${u.fullName||'—'}</span></div>
+      <div class="irow"><span class="irow-lbl">Username</span><span class="irow-val">@${u.username||'—'}</span></div>
+      <div class="irow"><span class="irow-lbl">Email</span><span class="irow-val">${u.email||'—'}</span></div>
+      <div class="irow"><span class="irow-lbl">Phone</span><span class="irow-val">${u.phone||'—'}</span></div>
+      <div class="irow"><span class="irow-lbl">Referral Code</span><span class="irow-val">${u.referralCode||'—'}</span></div>
+      <div class="irow"><span class="irow-lbl">Referred By</span><span class="irow-val">${u.referredBy||'Direct signup'}</span></div>
+      <div class="irow"><span class="irow-lbl">Total Invested</span><span class="irow-val">${fmtN(u.totalInvested)}</span></div>
+      <div class="irow"><span class="irow-lbl">Total Earnings</span><span class="irow-val">${fmtN(u.totalEarnings)}</span></div>
+      <div class="irow"><span class="irow-lbl">Ref Earnings</span><span class="irow-val">${fmtN(u.totalRefEarnings)}</span></div>
+      <div class="irow"><span class="irow-lbl">Account Status</span><span class="irow-val">${u.suspended?'🔴 Suspended':'🟢 Active'}</span></div>
+      ${u.suspendReason ? `<div class="irow"><span class="irow-lbl">Suspend Reason</span><span class="irow-val" style="color:var(--danger);">${u.suspendReason}</span></div>` : ''}
+      <div class="irow"><span class="irow-lbl">Joined</span><span class="irow-val">${fmtDT(u.createdAt)}</span></div>
+      <div class="irow"><span class="irow-lbl">User ID</span><span class="irow-val" style="font-size:10.5px;color:var(--muted);">${u.id}</span></div>`;
+  }
+
+  /* ── BALANCE ── */
+  else if (tab === 'balance') {
+    body.innerHTML = `
+      <div class="mini-stats">
+        <div class="mstat"><div class="mstat-val" style="color:var(--success);">${fmtS(u.balance)}</div><div class="mstat-lbl">Balance</div></div>
+        <div class="mstat"><div class="mstat-val">${fmtS(u.totalInvested)}</div><div class="mstat-lbl">Invested</div></div>
+        <div class="mstat"><div class="mstat-val">${fmtS(u.totalEarnings)}</div><div class="mstat-lbl">Earned</div></div>
+      </div>
+
+      <div class="inp-group" style="border:1.5px solid #b0f0d8;">
+        <div class="inp-group-title" style="color:var(--success);">💚 Fund Account — Add Money</div>
+        <div class="inp-row">
+          <input class="inp" id="fundAmt" type="number" placeholder="Amount to add (₦)" min="1"/>
+          <button class="inp-btn green" onclick="fundUser()">Add</button>
+        </div>
+      </div>
+
+      <div class="inp-group" style="border:1.5px solid #ffd0d9;">
+        <div class="inp-group-title" style="color:var(--danger);">❌ Deduct Balance — Remove Money</div>
+        <div class="inp-row">
+          <input class="inp" id="deductAmt" type="number" placeholder="Amount to deduct (₦)" min="1"/>
+          <button class="inp-btn red" onclick="deductUser()">Deduct</button>
+        </div>
+      </div>
+
+      <div class="slabel">Optional note (saved to log)</div>
+      <textarea class="note-inp" id="balanceNote" placeholder="Reason for adjustment e.g. Manual top-up, Correction..."></textarea>`;
+  }
+
+  /* ── DEPOSITS ── */
+  else if (tab === 'deposits') {
+    try {
+      const snap = await db.collection('deposits').where('userId','==',uid).get();
+      const docs = snap.docs.sort((a,b) => (b.data().createdAt?.toMillis()||0)-(a.data().createdAt?.toMillis()||0));
+      if (!docs.length) { body.innerHTML=emptyHTML('📭','No deposits yet'); return; }
+      const icons = {pending:'⏳',approved:'✅',rejected:'❌'};
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;">${docs.length} deposit record${docs.length!==1?'s':''}</div>`;
+      docs.forEach(doc => {
+        const d=doc.data(), st=d.status||'pending';
+        html += `<div class="hist-item">
+          <div class="hist-icon ${st}">${icons[st]||'💰'}</div>
+          <div class="hist-info">
+            <div class="hist-amount">${fmtN(d.amount)}</div>
+            <div class="hist-date">${fmtDT(d.createdAt)}${d.refCode?' · '+d.refCode:''}</div>
+            ${d.transferRef?`<div class="hist-date">Ref: ${d.transferRef}</div>`:''}
+          </div>
+          <span class="hist-badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span>
+        </div>`;
+      });
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML=errHTML(e.message); }
+  }
+
+  /* ── WITHDRAWALS ── */
+  else if (tab === 'withdrawals') {
+    try {
+      const snap = await db.collection('withdrawals').where('userId','==',uid).get();
+      const docs = snap.docs.sort((a,b) => (b.data().requestedAt?.toMillis()||0)-(a.data().requestedAt?.toMillis()||0));
+      if (!docs.length) { body.innerHTML=emptyHTML('📭','No withdrawals yet'); return; }
+      const icons = {pending:'⏳',approved:'✅',rejected:'❌'};
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;">${docs.length} withdrawal record${docs.length!==1?'s':''}</div>`;
+      docs.forEach(doc => {
+        const d=doc.data(), st=d.status||'pending';
+        html += `<div class="hist-item">
+          <div class="hist-icon ${st}">${icons[st]||'💸'}</div>
+          <div class="hist-info">
+            <div class="hist-amount">${fmtN(d.amount)}</div>
+            <div class="hist-date">${fmtDT(d.requestedAt)}</div>
+            <div class="hist-date">${d.bankName||''} · ${d.accountName||''} · ${d.accountNumber||''}</div>
+          </div>
+          <span class="hist-badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span>
+        </div>`;
+      });
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML=errHTML(e.message); }
+  }
+
+  /* ── PLANS ── */
+  else if (tab === 'plans') {
+    try {
+      const snap = await db.collection('investments').where('userId','==',uid).get();
+      const docs = snap.docs.sort((a,b) => (b.data().activationTime?.toMillis()||0)-(a.data().activationTime?.toMillis()||0));
+      if (!docs.length) { body.innerHTML=emptyHTML('📈','No investments yet'); return; }
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;">${docs.length} plan${docs.length!==1?'s':''}</div>`;
+      docs.forEach(doc => {
+        const d=doc.data();
+        const passed = d.activationTime ? Math.floor((Date.now()-d.activationTime.toMillis())/86400000) : 0;
+        const left   = Math.max(0,(d.durationDays||30)-passed);
+        const pct    = Math.min(100,Math.round(passed/(d.durationDays||30)*100));
+        const st     = d.active ? 'active' : 'inactive';
+        html += `<div class="plan-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:14px;font-weight:700;">${d.planName||'—'}</div>
+            <span class="hist-badge ${st}">${d.active?'Active':'Completed'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;margin-bottom:10px;">
+            <div><span style="color:var(--muted);">Invested:</span> <b>${fmtN(d.amount)}</b></div>
+            <div><span style="color:var(--muted);">Daily ROI:</span> <b>${fmtN(d.dailyROI)}</b></div>
+            <div><span style="color:var(--muted);">Days Left:</span> <b>${left}d</b></div>
+            <div><span style="color:var(--muted);">Total Return:</span> <b>${fmtN(d.totalReturn)}</b></div>
+          </div>
+          <div class="plan-bar-bg"><div class="plan-bar" style="width:${pct}%;"></div></div>
+          <div style="font-size:10.5px;color:var(--muted);font-weight:600;">${pct}% complete · Started ${fmtD(d.activationTime)}</div>
+        </div>`;
+      });
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML=errHTML(e.message); }
+  }
+
+  /* ── REFERRALS ── */
+  else if (tab === 'referrals') {
+    try {
+      const l1snap = await db.collection('users').where('referrerUid','==',uid).get();
+      if (l1snap.empty) { body.innerHTML=emptyHTML('👥','No referrals yet'); return; }
+      let html = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;">${l1snap.size} Level 1 referral${l1snap.size!==1?'s':''}</div>`;
+      for (const l1doc of l1snap.docs) {
+        const l1=l1doc.data();
+        html += `<div class="ref-item">
+          <div class="ref-av">${ini(l1.fullName||l1.username)}</div>
+          <div style="flex:1;">
+            <div class="ref-name">${l1.fullName||l1.username||'—'}</div>
+            <div class="ref-sub">${l1.email||'—'} · ${fmtS(l1.totalInvested)} invested</div>
+          </div>
+          <span class="lbadge l1">L1</span>
+        </div>`;
+        const l2snap = await db.collection('users').where('referrerUid','==',l1doc.id).get();
+        for (const l2doc of l2snap.docs) {
+          const l2=l2doc.data();
+          html += `<div class="ref-item" style="margin-left:18px;">
+            <div class="ref-av" style="background:linear-gradient(135deg,var(--accent),#00a07a);">${ini(l2.fullName||l2.username)}</div>
+            <div style="flex:1;">
+              <div class="ref-name">${l2.fullName||l2.username||'—'}</div>
+              <div class="ref-sub">${l2.email||'—'} · ${fmtS(l2.totalInvested)} invested</div>
+            </div>
+            <span class="lbadge l2">L2</span>
+          </div>`;
+        }
+      }
+      body.innerHTML = html;
+    } catch(e) { body.innerHTML=errHTML(e.message); }
+  }
+
+  /* ── DANGER ── */
+  else if (tab === 'danger') {
+    const susp = activeUser.suspended === true;
+    body.innerHTML = `
+      <div style="background:#FFF8E8;border:1.5px solid #ffe0a0;border-radius:14px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:13.5px;font-weight:800;color:#856404;margin-bottom:10px;">⏸️ Suspend Account</div>
+        <div style="font-size:12px;color:#856404;line-height:1.6;margin-bottom:12px;">Suspended users cannot log in. Active investments keep running.</div>
+        ${susp
+          ? `<div style="font-size:12.5px;font-weight:700;color:var(--danger);margin-bottom:10px;">🔴 Currently suspended${activeUser.suspendReason ? ': '+activeUser.suspendReason : ''}</div>
+             <button class="danger-btn unsuspend" onclick="unsuspendUser()"><i class="fas fa-lock-open"></i> Lift Suspension Now</button>`
+          : `<div class="slabel">Choose suspension length</div>
+             <div class="suspend-grid">
+               <button class="sdays-btn" onclick="suspendUser(1)">1 Day</button>
+               <button class="sdays-btn" onclick="suspendUser(3)">3 Days</button>
+               <button class="sdays-btn" onclick="suspendUser(7)">7 Days</button>
+               <button class="sdays-btn" onclick="suspendUser(14)">14 Days</button>
+               <button class="sdays-btn" onclick="suspendUser(30)">30 Days</button>
+               <button class="sdays-btn" onclick="suspendUser(99999)">Permanent</button>
+             </div>
+             <input class="inp" id="suspendReason" placeholder="Reason (shown in user record)" style="width:100%;margin-bottom:0;"/>
+             <button class="danger-btn suspend" style="margin-top:10px;" onclick="suspendUser(0)">Apply Suspension</button>`
+        }
+      </div>
+
+      <div style="background:#FFF0F3;border:1.5px solid #ffd0d9;border-radius:14px;padding:16px;">
+        <div style="font-size:13.5px;font-weight:800;color:var(--danger);margin-bottom:8px;">🗑️ Delete Account</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;">
+          <b style="color:var(--danger);">Warning:</b> Permanently deletes all Firestore data for this user. Cannot be undone.
+        </div>
+        <button class="danger-btn delete" onclick="deleteUser()"><i class="fas fa-trash"></i> Permanently Delete Account</button>
+      </div>`;
+  }
+}
+
+/* ════════════════════════════════
+   BALANCE ACTIONS
+════════════════════════════════ */
+async function fundUser() {
+  const amt  = parseFloat(document.getElementById('fundAmt').value)||0;
+  const note = document.getElementById('balanceNote')?.value?.trim()||'';
+  if (amt<=0) { Swal.fire({icon:'warning',title:'Enter a valid amount',confirmButtonColor:'#0052FF'}); return; }
+  const res = await Swal.fire({
+    icon:'question', title:`Add ${fmtN(amt)} to balance?`,
+    html:`<div style="font-size:13px;color:#6B7A99;">User: <b>${activeUser.fullName||activeUser.username}</b><br>New balance: <b>${fmtN((activeUser.balance||0)+amt)}</b></div>`,
+    showCancelButton:true, confirmButtonText:'✅ Add Funds',
+    confirmButtonColor:'#00C48C', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(activeUID).update({ balance: firebase.firestore.FieldValue.increment(amt) });
+    await logAction('fund', amt, note);
+    activeUser.balance = (activeUser.balance||0)+amt;
+    syncUser();
+    document.getElementById('fundAmt').value='';
+    Swal.fire({icon:'success',title:'Funded!',text:`${fmtN(amt)} added.`,timer:2000,showConfirmButton:false});
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+async function deductUser() {
+  const amt  = parseFloat(document.getElementById('deductAmt').value)||0;
+  const note = document.getElementById('balanceNote')?.value?.trim()||'';
+  if (amt<=0) { Swal.fire({icon:'warning',title:'Enter a valid amount',confirmButtonColor:'#0052FF'}); return; }
+  const newBal = Math.max(0,(activeUser.balance||0)-amt);
+  const res = await Swal.fire({
+    icon:'warning', title:`Deduct ${fmtN(amt)} from balance?`,
+    html:`<div style="font-size:13px;color:#6B7A99;">User: <b>${activeUser.fullName||activeUser.username}</b><br>New balance: <b>${fmtN(newBal)}</b></div>`,
+    showCancelButton:true, confirmButtonText:'Deduct',
+    confirmButtonColor:'#FF4D6D', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(activeUID).update({ balance: newBal });
+    await logAction('deduct', amt, note);
+    activeUser.balance = newBal;
+    syncUser();
+    document.getElementById('deductAmt').value='';
+    Swal.fire({icon:'success',title:'Deducted',text:`${fmtN(amt)} removed.`,timer:2000,showConfirmButton:false});
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ════════════════════════════════
+   SUSPEND / UNSUSPEND
+════════════════════════════════ */
+let pendingSuspendDays = 0;
+
+function suspendUser(days) {
+  /* If days=0 read from selected days button, else set days */
+  if (days > 0) pendingSuspendDays = days;
+  if (pendingSuspendDays === 0) {
+    Swal.fire({icon:'warning',title:'Choose a suspension length first',confirmButtonColor:'#0052FF'});
+    return;
+  }
+
+  const reason = document.getElementById('suspendReason')?.value?.trim()||'';
+  const label  = pendingSuspendDays>=99999 ? 'permanently' : `for ${pendingSuspendDays} day${pendingSuspendDays!==1?'s':''}`;
+
+  Swal.fire({
+    icon:'warning', title:`Suspend ${label}?`,
+    html:`<div style="font-size:13px;color:#6B7A99;">User: <b>${activeUser.fullName||activeUser.username}</b>${reason?'<br>Reason: <b>'+reason+'</b>':''}</div>`,
+    showCancelButton:true, confirmButtonText:'Yes, Suspend',
+    confirmButtonColor:'#FFB800', cancelButtonColor:'#6B7A99'
+  }).then(async res => {
+    if (!res.isConfirmed) return;
+    try {
+      const until = pendingSuspendDays>=99999
+        ? new Date('2099-01-01')
+        : new Date(Date.now()+pendingSuspendDays*86400000);
+      await db.collection('users').doc(activeUID).update({
+        suspended:true,
+        suspendedUntil:firebase.firestore.Timestamp.fromDate(until),
+        suspendReason:reason
+      });
+      activeUser.suspended=true; activeUser.suspendReason=reason;
+      syncUser();
+      /* Update drawer head */
+      document.getElementById('dStatus').textContent='● Suspended';
+      document.getElementById('dStatus').className='dhead-status suspended';
+      Swal.fire({icon:'success',title:'Suspended',text:`Account suspended ${label}.`,timer:2000,showConfirmButton:false});
+      renderTab('danger');
+      renderTable();
+    } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+  });
+}
+
+async function unsuspendUser() {
+  const res = await Swal.fire({
+    icon:'question', title:'Lift suspension?',
+    text:`${activeUser.fullName||activeUser.username} will be able to log in again.`,
+    showCancelButton:true, confirmButtonText:'Yes, Unsuspend',
+    confirmButtonColor:'#00C48C', cancelButtonColor:'#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(activeUID).update({ suspended:false, suspendedUntil:null, suspendReason:'' });
+    activeUser.suspended=false;
+    syncUser();
+    document.getElementById('dStatus').textContent='● Active';
+    document.getElementById('dStatus').className='dhead-status active';
+    Swal.fire({icon:'success',title:'Suspension Lifted',timer:2000,showConfirmButton:false});
+    renderTab('danger');
+    renderTable();
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ════════════════════════════════
+   DELETE USER
+════════════════════════════════ */
+async function deleteUser() {
+  const res = await Swal.fire({
+    icon:'error', title:'Delete this account?',
+    html:`<div style="font-size:13px;color:#6B7A99;">This permanently deletes all data for<br><b>${activeUser.fullName||activeUser.username||activeUser.email}</b>.<br><br>Type <b>DELETE</b> to confirm.</div>`,
+    input:'text', inputPlaceholder:'Type DELETE to confirm',
+    showCancelButton:true, confirmButtonText:'Delete Account',
+    confirmButtonColor:'#FF4D6D', cancelButtonColor:'#6B7A99',
+    preConfirm: v => { if(v!=='DELETE'){Swal.showValidationMessage('Type DELETE in capitals');return false;} return true; }
+  });
+  if (!res.isConfirmed) return;
+  try {
+    await db.collection('users').doc(activeUID).delete();
+    allUsers = allUsers.filter(u => u.id !== activeUID);
+    closeDrawerDirect();
+    renderTable();
+    document.getElementById('userCount').textContent = `${allUsers.length} users`;
+    Swal.fire({icon:'success',title:'Account Deleted',timer:2000,showConfirmButton:false});
+  } catch(e) { Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'}); }
+}
+
+/* ════════════════════════════════
+   HELPERS
+════════════════════════════════ */
+function syncUser() {
+  const idx = allUsers.findIndex(u => u.id === activeUID);
+  if (idx !== -1) allUsers[idx] = { ...allUsers[idx], ...activeUser };
+}
+
+async function logAction(action, amount, note) {
+  try {
+    await db.collection('admin_actions').add({
+      action, userId:activeUID, amount, note,
+      adminUid:auth.currentUser?.uid||'admin',
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e){}
+}
+
+function emptyHTML(icon, msg) {
+  return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${msg}</div></div>`;
+}
+function errHTML(msg) {
+  return `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Error loading data</div><div class="empty-sub">${msg}</div></div>`;
+}
+</script>
+</body>
+</html>

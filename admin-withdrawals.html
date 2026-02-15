@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Withdrawals</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{--primary:#0052FF;--danger:#FF4D6D;--warning:#FFB800;--success:#00C48C;--text:#0D1B3E;--muted:#6B7A99;--border:#D8E0F0;--bg:#F0F4FF;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,82,255,0.06);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);text-decoration:none;transition:background .2s;}
+.back-btn:hover{background:var(--border);}
+.page-title{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;}
+
+/* WITHDRAWAL TOGGLE BANNER */
+.toggle-banner{margin:20px 20px 0;border-radius:16px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;transition:background .4s,border-color .4s;border:2px solid;}
+.toggle-banner.open{background:#E8FFF6;border-color:#b0f0d8;}
+.toggle-banner.closed{background:#FFF0F3;border-color:#ffd0d9;}
+.toggle-left{display:flex;align-items:center;gap:14px;}
+.toggle-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;transition:background .4s;}
+.toggle-banner.open  .toggle-icon{background:#00C48C;color:white;}
+.toggle-banner.closed .toggle-icon{background:#FF4D6D;color:white;}
+.toggle-title{font-family:'Sora',sans-serif;font-size:16px;font-weight:700;}
+.toggle-sub{font-size:12.5px;font-weight:600;margin-top:3px;}
+.toggle-banner.open  .toggle-sub{color:var(--success);}
+.toggle-banner.closed .toggle-sub{color:var(--danger);}
+.toggle-btn{padding:11px 26px;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.toggle-btn.open{background:var(--danger);color:white;box-shadow:0 4px 16px rgba(255,77,109,0.35);}
+.toggle-btn.open:hover{opacity:.88;}
+.toggle-btn.closed{background:var(--success);color:white;box-shadow:0 4px 16px rgba(0,196,140,0.35);}
+.toggle-btn.closed:hover{opacity:.88;}
+
+/* SUMMARY CARDS */
+.summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;padding:16px 20px 0;}
+.scard{background:white;border-radius:14px;padding:16px;box-shadow:0 3px 12px rgba(0,82,255,0.06);}
+.scard-val{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;margin-bottom:3px;}
+.scard-lbl{font-size:11.5px;color:var(--muted);font-weight:700;}
+
+/* FILTER BAR */
+.filter-bar{padding:14px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-wrap{display:flex;align-items:center;gap:8px;background:white;border:2px solid var(--border);border-radius:11px;padding:0 14px;flex:1;min-width:200px;max-width:320px;transition:border-color .2s;}
+.search-wrap:focus-within{border-color:var(--primary);}
+.search-wrap i{color:var(--muted);font-size:14px;}
+.search-input{flex:1;border:none;background:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);padding:10px 0;}
+.fbtn{padding:8px 16px;border-radius:9px;border:2px solid var(--border);background:white;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .2s;position:relative;}
+.fbtn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.fbtn .cnt{position:absolute;top:-7px;right:-7px;background:var(--danger);color:white;border-radius:99px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
+.refresh-btn{width:38px;height:38px;border-radius:10px;border:2px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;transition:all .2s;flex-shrink:0;margin-left:auto;}
+.refresh-btn:hover{border-color:var(--primary);color:var(--primary);}
+.spin{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TABLE */
+.table-wrap{padding:0 20px 30px;overflow-x:auto;}
+.table{width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,82,255,0.07);}
+.table th{padding:13px 16px;text-align:left;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:#F8FAFF;border-bottom:1px solid var(--border);}
+.table td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:middle;}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:#FAFBFF;}
+
+.u-cell{display:flex;align-items:center;gap:10px;}
+.u-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#0052FF,#001c6b);color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;}
+.u-name{font-size:13px;font-weight:700;}
+.u-sub{font-size:11.5px;color:var(--muted);}
+
+.amt{font-weight:800;font-size:14px;}
+.amt.red{color:var(--danger);}
+
+.bank-cell{font-size:13px;}
+.bank-number{font-weight:800;color:var(--text);}
+.bank-name{color:var(--muted);font-size:11.5px;}
+
+.ref-code{font-size:11.5px;background:var(--bg);padding:3px 9px;border-radius:6px;font-weight:700;color:var(--primary);font-family:monospace;}
+.txid-code{font-size:11px;background:#F0F4FF;padding:3px 8px;border-radius:6px;font-weight:700;color:var(--muted);font-family:monospace;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;}
+
+.badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge.pending{background:#FFF8E8;color:var(--warning);}
+.badge.approved{background:#E8FFF6;color:var(--success);}
+.badge.rejected{background:#FFF0F3;color:var(--danger);}
+
+.act-btn{padding:7px 12px;border-radius:9px;border:none;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
+.act-btn:hover{opacity:.82;}
+.btn-approve{background:#E8FFF6;color:var(--success);margin-right:4px;}
+.btn-reject{background:#FFF0F3;color:var(--danger);margin-right:4px;}
+.btn-view{background:#E8F0FF;color:var(--primary);}
+
+.skel{height:14px;background:linear-gradient(90deg,#f0f4ff 25%,#e0e8ff 50%,#f0f4ff 75%);background-size:200% 100%;border-radius:6px;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.empty-sub{font-size:13px;}
+
+/* ═══════ DETAIL MODAL ═══════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,0.5);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:white;border-radius:22px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.25);animation:mIn .3s cubic-bezier(.16,1,.3,1);}
+.modal::-webkit-scrollbar{width:4px;}
+.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+@keyframes mIn{from{transform:translateY(16px) scale(.97)}to{transform:none}}
+
+.modal-head{padding:20px 22px 16px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;}
+.modal-close{width:32px;height:32px;border-radius:9px;background:var(--bg);border:none;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* Payment details highlight box */
+.pay-box{margin:16px 22px;background:linear-gradient(135deg,#E8FFF6,#F0FFF8);border:2px solid #b0f0d8;border-radius:14px;padding:16px;}
+.pay-box-title{font-size:12px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.pay-field{margin-bottom:10px;}
+.pay-field:last-child{margin-bottom:0;}
+.pay-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.pay-val{font-size:15px;font-weight:800;color:var(--text);}
+.copy-btn{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:white;border:1.5px solid var(--border);border-radius:7px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;margin-left:8px;transition:all .2s;font-family:inherit;}
+.copy-btn:hover{border-color:var(--primary);color:var(--primary);}
+
+/* TX ID box */
+.txid-box{margin:0 22px 16px;background:#F8FAFF;border:2px solid var(--border);border-radius:13px;padding:14px;}
+.txid-box-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.txid-val{font-family:monospace;font-size:14px;font-weight:700;color:var(--primary);word-break:break-all;}
+
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.mrow:last-child{border-bottom:none;}
+.mrow-lbl{font-size:12px;font-weight:700;color:var(--muted);}
+.mrow-val{font-size:13.5px;font-weight:700;text-align:right;word-break:break-all;max-width:260px;}
+
+.modal-info{padding:0 22px 16px;}
+
+/* Action note input */
+.note-wrap{margin:0 22px 16px;}
+.note-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px;}
+.note-inp{width:100%;padding:11px 13px;border:2px solid var(--border);border-radius:11px;font-family:inherit;font-size:13.5px;outline:none;resize:none;height:72px;transition:border-color .2s;}
+.note-inp:focus{border-color:var(--primary);}
+
+.modal-actions{display:flex;gap:8px;padding:0 22px 20px;flex-wrap:wrap;}
+.mbtn{flex:1;min-width:100px;padding:12px;border:none;border-radius:11px;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;}
+.mbtn:hover{opacity:.85;}
+.mbtn-approve{background:var(--success);color:white;}
+.mbtn-reject{background:var(--danger);color:white;}
+.mbtn-cancel{background:var(--bg);color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back-btn" href="admin-dashboard.html"><i class="fas fa-arrow-left"></i></a>
+    <div class="page-title">💸 Withdrawal Management</div>
+  </div>
+</div>
+
+<!-- WITHDRAWAL OPEN/CLOSE TOGGLE -->
+<div class="toggle-banner open" id="toggleBanner">
+  <div class="toggle-left">
+    <div class="toggle-icon" id="toggleIcon">✅</div>
+    <div>
+      <div class="toggle-title" id="toggleTitle">Withdrawals are OPEN</div>
+      <div class="toggle-sub" id="toggleSub">Users can currently request withdrawals</div>
+    </div>
+  </div>
+  <button class="toggle-btn open" id="toggleBtn" onclick="toggleWithdrawals()">
+    <i class="fas fa-lock" id="toggleBtnIcon"></i>
+    <span id="toggleBtnText">Close Withdrawals</span>
+  </button>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="summary">
+  <div class="scard"><div class="scard-val" id="sc-all">—</div><div class="scard-lbl">Total Requests</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--warning);" id="sc-pending">—</div><div class="scard-lbl">Pending</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--success);" id="sc-approved">—</div><div class="scard-lbl">Approved</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--danger);" id="sc-rejected">—</div><div class="scard-lbl">Rejected</div></div>
+  <div class="scard"><div class="scard-val" style="color:var(--danger);" id="sc-total">—</div><div class="scard-lbl">Total Paid Out ₦</div></div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-search"></i>
+    <input class="search-input" id="searchInput" placeholder="Search name, email, bank, account..." oninput="renderTable()"/>
+  </div>
+  <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+  <button class="fbtn" onclick="setFilter('pending',this)">Pending <span class="cnt" id="cnt-pending" style="display:none;"></span></button>
+  <button class="fbtn" onclick="setFilter('approved',this)">Approved</button>
+  <button class="fbtn" onclick="setFilter('rejected',this)">Rejected</button>
+  <button class="refresh-btn" onclick="loadWithdrawals()"><i class="fas fa-sync-alt" id="refreshIcon"></i></button>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Amount</th>
+        <th>Bank Details</th>
+        <th>Ref Code</th>
+        <th>Transaction ID</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td><div class="skel" style="width:140px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:130px;"></div></td><td><div class="skel" style="width:90px;"></div></td><td><div class="skel" style="width:110px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:130px;"></div></td></tr>
+      <tr><td><div class="skel" style="width:130px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:130px;"></div></td><td><div class="skel" style="width:90px;"></div></td><td><div class="skel" style="width:110px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:130px;"></div></td></tr>
+      <tr><td><div class="skel" style="width:150px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:130px;"></div></td><td><div class="skel" style="width:90px;"></div></td><td><div class="skel" style="width:110px;"></div></td><td><div class="skel" style="width:70px;"></div></td><td><div class="skel" style="width:80px;"></div></td><td><div class="skel" style="width:130px;"></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+  <div class="modal" id="modalBox">
+
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modalTitle">💸 Withdrawal Request</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="modalTxId"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+
+    <!-- PAYMENT DETAILS — big and clear for manual transfer -->
+    <div class="pay-box" id="payBox">
+      <div class="pay-box-title"><i class="fas fa-university"></i> Pay This Account</div>
+      <div class="pay-field">
+        <div class="pay-lbl">Account Number</div>
+        <div class="pay-val" id="pb-accnum">—
+          <button class="copy-btn" onclick="copyText('pb-accnum')"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+      </div>
+      <div class="pay-field">
+        <div class="pay-lbl">Account Name</div>
+        <div class="pay-val" id="pb-accname">—</div>
+      </div>
+      <div class="pay-field">
+        <div class="pay-lbl">Bank</div>
+        <div class="pay-val" id="pb-bank">—</div>
+      </div>
+      <div class="pay-field">
+        <div class="pay-lbl">Amount Requested</div>
+        <div class="pay-val" style="color:var(--muted);font-size:14px;text-decoration:line-through;" id="pb-requested">—</div>
+      </div>
+      <div class="pay-field">
+        <div class="pay-lbl">✅ Amount to Send (after 10% fee)</div>
+        <div class="pay-val" style="color:var(--success);font-size:22px;" id="pb-amount">—
+          <button class="copy-btn" onclick="copyAmountRaw()"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTION ID -->
+    <div class="txid-box">
+      <div class="txid-box-title"><i class="fas fa-fingerprint"></i> Transaction ID (for your records)</div>
+      <div class="txid-val" id="modal-txid">—</div>
+    </div>
+
+    <!-- ALL DETAILS -->
+    <div class="modal-info" id="modalInfo"></div>
+
+    <!-- ADMIN NOTE -->
+    <div class="note-wrap" id="noteWrap" style="display:none;">
+      <div class="note-lbl">Admin Note / Rejection Reason</div>
+      <textarea class="note-inp" id="adminNote" placeholder="e.g. Payment sent via GTBank — TRF/2024/XYZ or reason for rejection..."></textarea>
+    </div>
+
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+auth.onAuthStateChanged(u => {
+  if (!u) { window.location.href = 'admin-login.html'; return; }
+  loadWithdrawals();
+  loadToggleState();
+});
+
+/* ── State ── */
+let allWithdrawals = [];
+let activeFilter   = 'all';
+let activeDocId    = null;
+let activeRawAmt   = 0;
+let withdrawalsOpen = true;
+
+/* ── Helpers ── */
+const fmtN  = n  => '₦' + Number(n||0).toLocaleString('en-NG');
+const fmtDT = ts => { if(!ts)return '—'; try{ const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString('en-NG',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return '—';} };
+const ini   = n  => (n||'U').charAt(0).toUpperCase();
+
+/* Generate transaction ID from doc ID + timestamp */
+function genTxId(docId, ts) {
+  const date = ts?.toDate ? ts.toDate() : new Date();
+  const yr   = date.getFullYear().toString().slice(-2);
+  const mo   = String(date.getMonth()+1).padStart(2,'0');
+  const dy   = String(date.getDate()).padStart(2,'0');
+  const slug = docId.slice(-6).toUpperCase();
+  return `TXN-${yr}${mo}${dy}-${slug}`;
+}
+
+/* ════════════════════════════════
+   OPEN / CLOSE WITHDRAWAL TOGGLE
+════════════════════════════════ */
+async function loadToggleState() {
+  try {
+    const snap = await db.collection('settings').doc('withdrawals').get();
+    withdrawalsOpen = snap.exists ? (snap.data().isOpen !== false) : true;
+    updateToggleUI();
+  } catch(e) { /* default to open */ }
+}
+
+async function toggleWithdrawals() {
+  const newState = !withdrawalsOpen;
+  const label    = newState ? 'open' : 'close';
+
+  const res = await Swal.fire({
+    icon: newState ? 'question' : 'warning',
+    title: `${newState ? 'Open' : 'Close'} withdrawals?`,
+    html: newState
+      ? `<div style="font-size:13px;color:#6B7A99;">Users will be able to request withdrawals again.</div>`
+      : `<div style="font-size:13px;color:#6B7A99;">Users will <b>not</b> be able to request new withdrawals.<br>Existing pending requests are not affected.</div>`,
+    showCancelButton: true,
+    confirmButtonText: newState ? '✅ Yes, Open' : '🔒 Yes, Close',
+    confirmButtonColor: newState ? '#00C48C' : '#FF4D6D',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+
+  try {
+    await db.collection('settings').doc('withdrawals').set({
+      isOpen:    newState,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: auth.currentUser?.uid || 'admin'
+    });
+    withdrawalsOpen = newState;
+    updateToggleUI();
+    Swal.fire({
+      icon: 'success',
+      title: `Withdrawals ${newState ? 'Opened' : 'Closed'}`,
+      timer: 1800,
+      showConfirmButton: false
+    });
+  } catch(e) {
+    Swal.fire({icon:'error', title:'Failed', text:e.message, confirmButtonColor:'#0052FF'});
+  }
+}
+
+function updateToggleUI() {
+  const banner  = document.getElementById('toggleBanner');
+  const icon    = document.getElementById('toggleIcon');
+  const title   = document.getElementById('toggleTitle');
+  const sub     = document.getElementById('toggleSub');
+  const btn     = document.getElementById('toggleBtn');
+  const btnIcon = document.getElementById('toggleBtnIcon');
+  const btnText = document.getElementById('toggleBtnText');
+
+  if (withdrawalsOpen) {
+    banner.className  = 'toggle-banner open';
+    icon.textContent  = '✅';
+    title.textContent = 'Withdrawals are OPEN';
+    sub.textContent   = 'Users can currently request withdrawals';
+    btn.className     = 'toggle-btn open';
+    btnIcon.className = 'fas fa-lock';
+    btnText.textContent = 'Close Withdrawals';
+  } else {
+    banner.className  = 'toggle-banner closed';
+    icon.textContent  = '🔒';
+    title.textContent = 'Withdrawals are CLOSED';
+    sub.textContent   = 'Users cannot request new withdrawals right now';
+    btn.className     = 'toggle-btn closed';
+    btnIcon.className = 'fas fa-lock-open';
+    btnText.textContent = 'Open Withdrawals';
+  }
+}
+
+/* ════════════════════════════════
+   LOAD DATA
+════════════════════════════════ */
+async function loadWithdrawals() {
+  document.getElementById('refreshIcon').classList.add('spin');
+  try {
+    const snap = await db.collection('withdrawals').get();
+    allWithdrawals = snap.docs.map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => (b.requestedAt?.toMillis()||0) - (a.requestedAt?.toMillis()||0));
+
+    /* Add generated txId to each record */
+    allWithdrawals.forEach(w => { w.txId = genTxId(w.id, w.requestedAt); });
+
+    updateSummary();
+    renderTable();
+  } catch(e) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load</div><div class="empty-sub">${e.message}</div></div></td></tr>`;
+  } finally {
+    document.getElementById('refreshIcon').classList.remove('spin');
+  }
+}
+
+function updateSummary() {
+  const pending  = allWithdrawals.filter(w => w.status==='pending');
+  const approved = allWithdrawals.filter(w => w.status==='approved');
+  const rejected = allWithdrawals.filter(w => w.status==='rejected');
+  const totalAmt = approved.reduce((s,w) => s+Number(w.amount||0), 0);
+
+  document.getElementById('sc-all').textContent      = allWithdrawals.length;
+  document.getElementById('sc-pending').textContent  = pending.length;
+  document.getElementById('sc-approved').textContent = approved.length;
+  document.getElementById('sc-rejected').textContent = rejected.length;
+  document.getElementById('sc-total').textContent    = fmtN(totalAmt);
+
+  const cnt = document.getElementById('cnt-pending');
+  if (pending.length>0) { cnt.textContent=pending.length; cnt.style.display='inline'; }
+  else cnt.style.display='none';
+}
+
+/* ════════════════════════════════
+   FILTER + RENDER
+════════════════════════════════ */
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  return allWithdrawals.filter(w => {
+    if (activeFilter !== 'all' && w.status !== activeFilter) return false;
+    if (!q) return true;
+    return (w.userName||'').toLowerCase().includes(q)
+        || (w.userEmail||'').toLowerCase().includes(q)
+        || (w.bankName||'').toLowerCase().includes(q)
+        || (w.accountNumber||'').includes(q)
+        || (w.accountName||'').toLowerCase().includes(q)
+        || (w.refCode||'').toLowerCase().includes(q)
+        || (w.txId||'').toLowerCase().includes(q);
+  });
+}
+
+function renderTable() {
+  const list = getFiltered();
+  const body = document.getElementById('tableBody');
+  body.innerHTML = '';
+
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><div class="empty-title">No withdrawals found</div></div></td></tr>`;
+    return;
+  }
+
+  list.forEach(w => {
+    const st = w.status || 'pending';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="u-cell">
+          <div class="u-av">${ini(w.userName)}</div>
+          <div>
+            <div class="u-name">${w.userName||'Unknown'}</div>
+            <div class="u-sub">${w.userEmail||'—'}</div>
+            ${w.userPhone ? `<div class="u-sub">${w.userPhone}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td><span class="amt red">${fmtN(w.amount)}</span></td>
+      <td>
+        <div class="bank-cell">
+          <div class="bank-number">${w.accountNumber||'—'}</div>
+          <div class="bank-name">${w.accountName||'—'}</div>
+          <div class="bank-name">${w.bankName||'—'}</div>
+        </div>
+      </td>
+      <td><span class="ref-code">${w.refCode||'—'}</span></td>
+      <td><span class="txid-code" title="${w.txId||'—'}">${w.txId||'—'}</span></td>
+      <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDT(w.requestedAt)}</td>
+      <td>
+        ${st==='pending' ? `
+          <button class="act-btn btn-approve" onclick="quickApprove('${w.id}')">✅ Approve</button>
+          <button class="act-btn btn-reject"  onclick="quickReject('${w.id}')">❌ Reject</button>
+        ` : ''}
+        <button class="act-btn btn-view" onclick="openModal('${w.id}')">View</button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ════════════════════════════════
+   DETAIL MODAL
+════════════════════════════════ */
+function openModal(docId) {
+  activeDocId  = docId;
+  const w      = allWithdrawals.find(x => x.id === docId);
+  if (!w) return;
+
+  activeRawAmt = w.amount || 0;
+
+  /* Header */
+  document.getElementById('modalTitle').textContent  = `💸 ${fmtN(w.amount)} Withdrawal`;
+  document.getElementById('modalTxId').textContent   = `Transaction ID: ${w.txId||'—'}`;
+  document.getElementById('modal-txid').textContent  = w.txId || '—';
+
+  /* Payment box — big clear info for manual transfer */
+  const receiveAmt = w.receiveAmount || Math.round((w.amount||0) * 0.90);
+  const feeAmt     = w.feeAmount     || Math.round((w.amount||0) * 0.10);
+  activeRawAmt     = receiveAmt; /* copy button copies the receive amount */
+
+  document.getElementById('pb-accnum').childNodes[0].nodeValue     = w.accountNumber || '—';
+  document.getElementById('pb-accname').textContent                = w.accountName   || '—';
+  document.getElementById('pb-bank').textContent                   = w.bankName      || '—';
+  document.getElementById('pb-requested').textContent              = fmtN(w.amount) + ' (requested)';
+  document.getElementById('pb-amount').childNodes[0].nodeValue     = fmtN(receiveAmt);
+
+  /* All details */
+  document.getElementById('modalInfo').innerHTML = `
+    <div class="mrow"><span class="mrow-lbl">Amount Requested</span><span class="mrow-val" style="color:var(--danger);font-size:16px;">${fmtN(w.amount)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">10% Charge</span><span class="mrow-val" style="color:var(--danger);">- ${fmtN(w.feeAmount || Math.round(w.amount*0.10))}</span></div>
+    <div class="mrow"><span class="mrow-lbl">✅ User Receives</span><span class="mrow-val" style="color:var(--success);font-size:16px;font-weight:800;">${fmtN(w.receiveAmount || Math.round(w.amount*0.90))}</span></div>
+    <div class="mrow"><span class="mrow-lbl">User</span><span class="mrow-val">${w.userName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Email</span><span class="mrow-val">${w.userEmail||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Phone</span><span class="mrow-val">${w.userPhone||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Username</span><span class="mrow-val">@${w.userUsername||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Balance Before</span><span class="mrow-val">${fmtN(w.balanceBefore)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Balance After</span><span class="mrow-val">${fmtN(w.balanceAfter)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Status</span><span class="mrow-val"><span class="badge ${w.status||'pending'}">${(w.status||'pending').charAt(0).toUpperCase()+(w.status||'pending').slice(1)}</span></span></div>
+    ${w.adminNote ? `<div class="mrow"><span class="mrow-lbl">Admin Note</span><span class="mrow-val" style="color:var(--muted);">${w.adminNote}</span></div>` : ''}
+    ${w.processedAt ? `<div class="mrow"><span class="mrow-lbl">Processed At</span><span class="mrow-val">${fmtDT(w.processedAt)}</span></div>` : ''}
+    <div class="mrow"><span class="mrow-lbl">Requested At</span><span class="mrow-val">${fmtDT(w.requestedAt)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Ref Code</span><span class="mrow-val"><span class="ref-code">${w.refCode||'—'}</span></span></div>
+    <div class="mrow"><span class="mrow-lbl">User ID</span><span class="mrow-val" style="font-size:10.5px;color:var(--muted);">${w.userId||'—'}</span></div>`;
+
+  /* Note input + action buttons */
+  const noteWrap = document.getElementById('noteWrap');
+  const actions  = document.getElementById('modalActions');
+
+  if (w.status === 'pending') {
+    noteWrap.style.display = 'block';
+    document.getElementById('adminNote').value = '';
+    actions.innerHTML = `
+      <button class="mbtn mbtn-approve" onclick="modalApprove()">✅ Mark as Paid</button>
+      <button class="mbtn mbtn-reject"  onclick="modalReject()">❌ Reject</button>
+      <button class="mbtn mbtn-cancel"  onclick="closeModalDirect()">Cancel</button>`;
+  } else {
+    noteWrap.style.display = 'none';
+    actions.innerHTML = `<button class="mbtn mbtn-cancel" style="background:#E8F0FF;color:var(--primary);" onclick="closeModalDirect()">Close</button>`;
+  }
+
+  document.getElementById('detailModal').classList.add('open');
+}
+
+/* ════════════════════════════════
+   QUICK APPROVE / REJECT (from table)
+════════════════════════════════ */
+async function quickApprove(docId) {
+  const w = allWithdrawals.find(x => x.id === docId);
+  if (!w) return;
+
+  const {value:note, isConfirmed} = await Swal.fire({
+    icon: 'question',
+    title: `Mark ${fmtN(w.amount)} as Paid?`,
+    html: `
+      <div style="font-size:13px;color:#6B7A99;margin-bottom:10px;">
+        Confirm you have sent <b>${fmtN(w.amount)}</b> to:<br>
+        <b style="color:#0D1B3E;">${w.accountName}</b><br>
+        <b style="color:#0052FF;font-size:16px;">${w.accountNumber}</b> · ${w.bankName}
+      </div>`,
+    input: 'text',
+    inputPlaceholder: 'Your bank transfer reference (optional)',
+    showCancelButton: true,
+    confirmButtonText: '✅ Yes, Mark as Paid',
+    confirmButtonColor: '#00C48C',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!isConfirmed) return;
+  await processApprove(docId, note||'');
+}
+
+async function quickReject(docId) {
+  const w = allWithdrawals.find(x => x.id === docId);
+  if (!w) return;
+
+  const {value:reason, isConfirmed} = await Swal.fire({
+    icon: 'warning',
+    title: 'Reject this withdrawal?',
+    html: `<div style="font-size:13px;color:#6B7A99;margin-bottom:10px;"><b>${fmtN(w.amount)}</b> will be <b>refunded</b> back to the user's balance.</div>`,
+    input: 'text',
+    inputPlaceholder: 'Reason for rejection',
+    showCancelButton: true,
+    confirmButtonText: '❌ Reject & Refund',
+    confirmButtonColor: '#FF4D6D',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!isConfirmed) return;
+  await processReject(docId, w.userId, w.amount, reason||'');
+}
+
+async function modalApprove() {
+  const note = document.getElementById('adminNote').value.trim();
+  const w    = allWithdrawals.find(x => x.id === activeDocId);
+  if (!w) return;
+
+  const res = await Swal.fire({
+    icon: 'question',
+    title: `Mark as Paid?`,
+    html: `<div style="font-size:13px;color:#6B7A99;">Confirm you have sent <b>${fmtN(w.amount)}</b> to <b>${w.accountName}</b> at <b>${w.bankName}</b>.</div>`,
+    showCancelButton: true,
+    confirmButtonText: '✅ Yes, Paid',
+    confirmButtonColor: '#00C48C',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  closeModalDirect();
+  await processApprove(activeDocId, note);
+}
+
+async function modalReject() {
+  const note = document.getElementById('adminNote').value.trim();
+  const w    = allWithdrawals.find(x => x.id === activeDocId);
+  if (!w) return;
+
+  const res = await Swal.fire({
+    icon: 'warning',
+    title: 'Reject & Refund?',
+    html: `<div style="font-size:13px;color:#6B7A99;"><b>${fmtN(w.amount)}</b> will be refunded to the user.</div>`,
+    showCancelButton: true,
+    confirmButtonText: '❌ Reject & Refund',
+    confirmButtonColor: '#FF4D6D',
+    cancelButtonColor: '#6B7A99'
+  });
+  if (!res.isConfirmed) return;
+  closeModalDirect();
+  await processReject(activeDocId, w.userId, w.amount, note);
+}
+
+/* ════════════════════════════════
+   CORE APPROVE — mark as paid, save note
+════════════════════════════════ */
+async function processApprove(docId, note) {
+  Swal.fire({title:'Saving...', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
+  try {
+    await db.collection('withdrawals').doc(docId).update({
+      status:      'approved',
+      adminNote:   note,
+      processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      processedBy: auth.currentUser?.uid || 'admin'
+    });
+    const idx = allWithdrawals.findIndex(w => w.id === docId);
+    if (idx !== -1) { allWithdrawals[idx].status = 'approved'; allWithdrawals[idx].adminNote = note; }
+    updateSummary();
+    renderTable();
+    Swal.fire({icon:'success', title:'Marked as Paid ✅', timer:2000, showConfirmButton:false});
+  } catch(e) {
+    Swal.fire({icon:'error', title:'Failed', text:e.message, confirmButtonColor:'#0052FF'});
+  }
+}
+
+/* ════════════════════════════════
+   CORE REJECT — refund balance via batch
+════════════════════════════════ */
+async function processReject(docId, userId, amount, reason) {
+  Swal.fire({title:'Processing...', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
+  try {
+    const batch = db.batch();
+    batch.update(db.collection('withdrawals').doc(docId), {
+      status:      'rejected',
+      adminNote:   reason,
+      processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      processedBy: auth.currentUser?.uid || 'admin'
+    });
+    /* Refund balance — user's balance was deducted at request time */
+    batch.update(db.collection('users').doc(userId), {
+      balance: firebase.firestore.FieldValue.increment(amount)
+    });
+    await batch.commit();
+
+    const idx = allWithdrawals.findIndex(w => w.id === docId);
+    if (idx !== -1) { allWithdrawals[idx].status = 'rejected'; allWithdrawals[idx].adminNote = reason; }
+    updateSummary();
+    renderTable();
+    Swal.fire({icon:'success', title:'Rejected & Refunded', text:`${fmtN(amount)} returned to user's balance.`, timer:2500, showConfirmButton:false});
+  } catch(e) {
+    Swal.fire({icon:'error', title:'Failed', text:e.message, confirmButtonColor:'#0052FF'});
+  }
+}
+
+/* ════════════════════════════════
+   COPY HELPERS
+════════════════════════════════ */
+function copyText(elId) {
+  const text = document.getElementById(elId).childNodes[0].nodeValue.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    Swal.fire({title:'Copied!', icon:'success', timer:1200, showConfirmButton:false});
+  });
+}
+function copyAmountRaw() {
+  navigator.clipboard.writeText(String(activeRawAmt)).then(() => {
+    Swal.fire({title:'Amount Copied!', icon:'success', timer:1200, showConfirmButton:false});
+  });
+}
+
+function closeModal(e) { if (e.target === document.getElementById('detailModal')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('detailModal').classList.remove('open'); }
+</script>
+</body>
+</html>
