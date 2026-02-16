@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Referrals</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary:       #0052FF;
+    --primary-light: #3b7dff;
+    --primary-dark:  #0039b3;
+    --accent:        #00D4A0;
+    --accent-dark:   #00a87e;
+    --warning:       #FFB800;
+    --danger:        #FF4D6D;
+    --success:       #00C48C;
+    --bg:            #F0F4FF;
+    --card:          #ffffff;
+    --text:          #0D1B3E;
+    --muted:         #6B7A99;
+    --border:        #D8E0F0;
+    --nav-h:         70px;
+    --bottom-h:      72px;
+
+    --l1-color:  #0052FF;
+    --l1-bg:     #E8F0FF;
+    --l2-color:  #00C48C;
+    --l2-bg:     #E8FFF6;
+    --l3-color:  #FFB800;
+    --l3-bg:     #FFF8E8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: calc(var(--bottom-h) + 20px);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ════════ TOP BAR ════════ */
+  .topbar {
+    position: sticky; top: 0; z-index: 900;
+    height: var(--nav-h);
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 0 20px; gap: 12px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo {
+    width: 38px; height: 38px;
+    background: var(--primary); border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .topbar-brand {
+    font-family: 'Sora', sans-serif;
+    font-size: 20px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.3px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .topbar-clock {
+    font-size: 12.5px; color: var(--muted); font-weight: 600; display: none;
+  }
+  @media(min-width:520px){ .topbar-clock { display: block; } }
+  .user-avatar {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 15px; cursor: pointer;
+  }
+
+  /* ════════ HERO ════════ */
+  .hero {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 55%, #001c6b 100%);
+    padding: 28px 22px 90px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute;
+    width: 360px; height: 360px; border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    top: -100px; right: -80px;
+  }
+  .hero::after {
+    content: ''; position: absolute;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(0,212,160,0.1);
+    bottom: -60px; left: -40px;
+  }
+  .hero-tag {
+    font-size: 11.5px; font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 5px; position: relative; z-index: 1;
+  }
+  .hero-title {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(22px,5.5vw,30px);
+    font-weight: 700; color: #fff; margin-bottom: 6px;
+    position: relative; z-index: 1;
+  }
+  .hero-sub {
+    font-size: 13px; color: rgba(255,255,255,0.65);
+    font-weight: 500; position: relative; z-index: 1;
+  }
+
+  /* ════════ EARNINGS SUMMARY CARD (floating) ════════ */
+  .summary-outer {
+    padding: 0 16px;
+    margin-top: -56px;
+    position: relative; z-index: 10;
+  }
+  .summary-card {
+    background: white; border-radius: 22px;
+    box-shadow: 0 14px 44px rgba(0,82,255,0.14);
+    padding: 20px 22px;
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    animation: riseUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes riseUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .summary-item { flex: 1; min-width: 80px; text-align: center; }
+  .summary-item + .summary-item {
+    border-left: 1px solid var(--border);
+  }
+  .sum-val {
+    font-family: 'Sora', sans-serif;
+    font-size: 20px; font-weight: 700; color: var(--text);
+  }
+  .sum-lbl {
+    font-size: 10.5px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-top: 3px;
+  }
+
+  /* ════════ SECTION ════════ */
+  .section { padding: 24px 16px 0; }
+  .section-head {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px; font-weight: 700; color: var(--text);
+  }
+
+  /* ════════ REFERRAL LINK CARD ════════ */
+  .link-card {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    border-radius: 20px; padding: 22px 20px;
+    box-shadow: 0 8px 28px rgba(0,212,160,0.28);
+    animation: riseUp 0.55s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .link-card-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;
+  }
+  .link-card-sub {
+    font-size: 13px; color: rgba(255,255,255,0.8);
+    font-weight: 500; margin-bottom: 16px; line-height: 1.5;
+  }
+  .link-input-row {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.2);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 12px; padding: 10px 14px;
+  }
+  .link-input-txt {
+    font-size: 12.5px; font-weight: 700; color: #fff;
+    flex: 1; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; user-select: all;
+  }
+  .copy-btn {
+    background: white; color: var(--accent-dark);
+    border: none; border-radius: 8px;
+    padding: 7px 14px; font-size: 12.5px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    transition: opacity 0.2s; white-space: nowrap; flex-shrink: 0;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+  .share-row {
+    display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+  }
+  .share-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    color: #fff; border-radius: 99px;
+    padding: 7px 16px; font-size: 12.5px; font-weight: 700;
+    cursor: pointer; text-decoration: none;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .share-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ════════ LEVEL CARDS ════════ */
+  .level-cards {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+  }
+  @media(max-width:400px){ .level-cards { grid-template-columns: 1fr; } }
+
+  .level-card {
+    background: white; border-radius: 18px; padding: 18px 14px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,82,255,0.08);
+    animation: riseUp 0.55s cubic-bezier(0.16,1,0.3,1) both;
+    position: relative; overflow: hidden;
+  }
+  .level-card:nth-child(2){ animation-delay: 0.07s; }
+  .level-card:nth-child(3){ animation-delay: 0.14s; }
+  .level-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 4px;
+    border-radius: 18px 18px 0 0;
+  }
+  .lc-l1::before { background: var(--l1-color); }
+  .lc-l2::before { background: var(--l2-color); }
+  .lc-l3::before { background: var(--l3-color); }
+
+  .lc-badge {
+    display: inline-block; padding: 4px 12px;
+    border-radius: 99px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .lc-l1 .lc-badge { background: var(--l1-bg); color: var(--l1-color); }
+  .lc-l2 .lc-badge { background: var(--l2-bg); color: var(--l2-color); }
+  .lc-l3 .lc-badge { background: var(--l3-bg); color: var(--l3-color); }
+
+  .lc-count {
+    font-family: 'Sora', sans-serif;
+    font-size: 30px; font-weight: 700; color: var(--text);
+    line-height: 1; margin-bottom: 4px;
+  }
+  .lc-label {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .lc-rate {
+    font-size: 15px; font-weight: 800;
+  }
+  .lc-l1 .lc-rate { color: var(--l1-color); }
+  .lc-l2 .lc-rate { color: var(--l2-color); }
+  .lc-l3 .lc-rate { color: var(--l3-color); }
+  .lc-earned {
+    font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 3px;
+  }
+
+  /* ════════ HOW IT WORKS ════════ */
+  .how-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+  }
+  @media(max-width:400px){ .how-grid { grid-template-columns: 1fr; } }
+
+  .how-card {
+    background: white; border-radius: 16px; padding: 16px 12px;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(0,82,255,0.07);
+  }
+  .how-num {
+    width: 34px; height: 34px; background: var(--primary);
+    color: white; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px; margin: 0 auto 10px;
+  }
+  .how-title { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+  .how-desc  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* ════════ TABS ════════ */
+  .tabs-row {
+    display: flex; gap: 8px; overflow-x: auto;
+    padding-bottom: 2px; margin-bottom: 16px;
+  }
+  .tabs-row::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0; padding: 8px 18px;
+    border-radius: 99px; font-size: 13px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: white; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--primary); color: white; border-color: var(--primary);
+  }
+  .tab-btn:hover:not(.active) { background: var(--bg); }
+
+  /* ════════ DOWNLINE LIST ════════ */
+  .downline-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .downline-card {
+    background: white; border-radius: 18px; padding: 16px 18px;
+    box-shadow: 0 4px 16px rgba(0,82,255,0.07);
+    display: flex; align-items: center; gap: 14px;
+    animation: riseUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    transition: box-shadow 0.2s;
+  }
+  .downline-card:hover { box-shadow: 0 8px 28px rgba(0,82,255,0.13); }
+
+  .dl-avatar {
+    width: 44px; height: 44px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 17px; color: white; flex-shrink: 0;
+  }
+  .dl-av-l1 { background: linear-gradient(135deg, var(--l1-color), #6094ff); }
+  .dl-av-l2 { background: linear-gradient(135deg, var(--l2-color), #00f5b0); }
+  .dl-av-l3 { background: linear-gradient(135deg, var(--l3-color), #ffd84d); }
+
+  .dl-info { flex: 1; min-width: 0; }
+  .dl-name {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .dl-email {
+    font-size: 11.5px; color: var(--muted); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dl-meta {
+    display: flex; align-items: center; gap: 6px; margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .dl-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 99px;
+    font-size: 10.5px; font-weight: 700;
+  }
+  .dl-chip.lv1 { background: var(--l1-bg); color: var(--l1-color); }
+  .dl-chip.lv2 { background: var(--l2-bg); color: var(--l2-color); }
+  .dl-chip.lv3 { background: var(--l3-bg); color: var(--l3-color); }
+  .dl-chip.date { background: var(--bg); color: var(--muted); }
+
+  .dl-amounts { text-align: right; flex-shrink: 0; }
+  .dl-deposited {
+    font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px;
+  }
+  .dl-deposited span { color: var(--primary); font-weight: 700; }
+  .dl-earned {
+    font-size: 13px; font-weight: 800; color: var(--success);
+  }
+  .dl-earned-lbl {
+    font-size: 10px; font-weight: 600; color: var(--muted);
+  }
+
+  /* ════════ EMPTY STATE ════════ */
+  .empty-box {
+    background: white; border-radius: 20px;
+    padding: 44px 24px; text-align: center;
+    box-shadow: 0 4px 16px rgba(0,82,255,0.07);
+  }
+  .empty-emoji { font-size: 52px; margin-bottom: 12px; }
+  .empty-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 7px;
+  }
+  .empty-sub {
+    font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 18px;
+  }
+  .empty-cta {
+    display: inline-block; padding: 11px 26px;
+    background: var(--primary); color: white; border: none;
+    border-radius: 99px; font-size: 13.5px; font-weight: 700;
+    font-family: inherit; cursor: pointer; text-decoration: none;
+    box-shadow: 0 6px 20px rgba(0,82,255,0.28);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .empty-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,82,255,0.36); }
+
+  /* ════════ SKELETON ════════ */
+  .skeleton {
+    background: linear-gradient(90deg, #e8edf5 25%, #f4f7fc 50%, #e8edf5 75%);
+    background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 9px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+
+  /* ════════ BOTTOM NAV ════════ */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0;
+    width: 100%; height: var(--bottom-h);
+    background: white; border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    justify-content: space-around;
+    padding: 0 8px; z-index: 999;
+    box-shadow: 0 -4px 24px rgba(0,82,255,0.09);
+  }
+  .nav-item {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    text-decoration: none; padding: 8px 12px;
+    border-radius: 14px; flex: 1; max-width: 74px;
+    transition: background 0.2s; cursor: pointer;
+  }
+  .nav-item:hover { background: var(--bg); }
+  .nav-item i { font-size: 20px; color: var(--muted); transition: color 0.2s, transform 0.2s; }
+  .nav-item span { font-size: 10.5px; font-weight: 700; color: var(--muted); transition: color 0.2s; }
+  .nav-item.active i, .nav-item.active span { color: var(--primary); }
+  .nav-item.active i { transform: translateY(-2px); }
+  .nav-center {
+    width: 52px; height: 52px; border-radius: 16px;
+    background: var(--primary); display: flex;
+    align-items: center; justify-content: center;
+    box-shadow: 0 6px 22px rgba(0,82,255,0.38);
+    text-decoration: none; transition: transform 0.2s; margin-bottom: 10px; flex-shrink: 0;
+  }
+  .nav-center:hover { transform: translateY(-3px); }
+  .nav-center i { color: white; font-size: 21px; }
+
+  .page-bottom { height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ TOP BAR ══════════ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">💰</div>
+    <span class="topbar-brand">Referrals</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-clock" id="topClock">--:--</span>
+    <div class="user-avatar" id="avatarBox">?</div>
+  </div>
+</div>
+
+<!-- ══════════ HERO ══════════ -->
+<div class="hero">
+  <div class="hero-tag">Referral Program</div>
+  <div class="hero-title">Invite Friends &amp; Earn 🎁</div>
+  <div class="hero-sub">Earn on 3 levels — every friend you invite grows your income</div>
+</div>
+
+<!-- ══════════ SUMMARY CARD ══════════ -->
+<div class="summary-outer">
+  <div class="summary-card">
+    <div class="summary-item">
+      <div class="sum-val" id="sumTotalRefs">0</div>
+      <div class="sum-lbl">Total Refs</div>
+    </div>
+    <div class="summary-item">
+      <div class="sum-val" id="sumTotalEarned">₦0</div>
+      <div class="sum-lbl">Ref Earnings</div>
+    </div>
+    <div class="summary-item">
+      <div class="sum-val" id="sumTotalDeposited">₦0</div>
+      <div class="sum-lbl">Team Deposits</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ REFERRAL LINK ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Your Referral Link</div>
+  </div>
+  <div class="link-card">
+    <div class="link-card-title">Share &amp; Earn on Every Level</div>
+    <div class="link-card-sub">
+      Level 1: <strong>25%</strong> &nbsp;·&nbsp; Level 2: <strong>2%</strong> &nbsp;·&nbsp; Level 3: <strong>1%</strong> of each referred user's investment returns
+    </div>
+    <div class="link-input-row">
+      <div class="link-input-txt" id="refLinkDisplay">Generating your link...</div>
+      <button class="copy-btn" id="copyBtn" onclick="copyLink()">Copy</button>
+    </div>
+    <div class="share-row">
+      <button class="share-btn" onclick="shareWhatsApp()">
+        <i class="fab fa-whatsapp"></i> WhatsApp
+      </button>
+      <button class="share-btn" onclick="shareTelegram()">
+        <i class="fab fa-telegram"></i> Telegram
+      </button>
+      <button class="share-btn" onclick="shareNative()">
+        <i class="fas fa-share-alt"></i> Share
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LEVEL CARDS ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Level Breakdown</div>
+  </div>
+  <div class="level-cards">
+    <div class="level-card lc-l1">
+      <div class="lc-badge">Level 1</div>
+      <div class="lc-count" id="l1Count">0</div>
+      <div class="lc-label">Referrals</div>
+      <div class="lc-rate">25% Bonus</div>
+      <div class="lc-earned" id="l1Earned">₦0 earned</div>
+    </div>
+    <div class="level-card lc-l2">
+      <div class="lc-badge">Level 2</div>
+      <div class="lc-count" id="l2Count">0</div>
+      <div class="lc-label">Referrals</div>
+      <div class="lc-rate">2% Bonus</div>
+      <div class="lc-earned" id="l2Earned">₦0 earned</div>
+    </div>
+    <div class="level-card lc-l3">
+      <div class="lc-badge">Level 3</div>
+      <div class="lc-count" id="l3Count">0</div>
+      <div class="lc-label">Referrals</div>
+      <div class="lc-rate">1% Bonus</div>
+      <div class="lc-earned" id="l3Earned">₦0 earned</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ HOW IT WORKS ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">How It Works</div>
+  </div>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">1</div>
+      <div class="how-title">Share Your Link</div>
+      <div class="how-desc">Send your unique link to friends via WhatsApp, Telegram, or any platform.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">2</div>
+      <div class="how-title">They Sign Up & Invest</div>
+      <div class="how-desc">Your referral creates an account and makes a deposit to activate a plan.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">3</div>
+      <div class="how-title">You Earn Instantly</div>
+      <div class="how-desc">Get 25% on Level 1, 2% on Level 2, and 1% on Level 3 of their earnings.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DOWNLINE TABLE ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">My Downlines</div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="tabs-row">
+    <button class="tab-btn active" onclick="switchTab('all', this)">All</button>
+    <button class="tab-btn" onclick="switchTab('1', this)">Level 1 (25%)</button>
+    <button class="tab-btn" onclick="switchTab('2', this)">Level 2 (2%)</button>
+    <button class="tab-btn" onclick="switchTab('3', this)">Level 3 (1%)</button>
+  </div>
+
+  <div class="downline-list" id="downlineList">
+    <!-- Skeleton loader -->
+    <div class="downline-card">
+      <div class="skeleton" style="width:44px;height:44px;border-radius:13px;flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div class="skeleton" style="height:14px;width:55%;margin-bottom:7px;"></div>
+        <div class="skeleton" style="height:11px;width:75%;"></div>
+      </div>
+    </div>
+    <div class="downline-card">
+      <div class="skeleton" style="width:44px;height:44px;border-radius:13px;flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div class="skeleton" style="height:14px;width:45%;margin-bottom:7px;"></div>
+        <div class="skeleton" style="height:11px;width:65%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-bottom"></div>
+
+<!-- ══════════ BOTTOM NAV ══════════ -->
+<div class="bottom-nav">
+  <a href="home.html" class="nav-item">
+    <i class="fas fa-home"></i>
+    <span>Home</span>
+  </a>
+  <a href="plans.html" class="nav-item">
+    <i class="fas fa-chart-line"></i>
+    <span>Plans</span>
+  </a>
+  <a href="investments.html" class="nav-center" title="My Investments">
+    <i class="fas fa-wallet"></i>
+  </a>
+  <a href="referrals.html" class="nav-item active">
+    <i class="fas fa-users"></i>
+    <span>Referrals</span>
+  </a>
+  <a href="dashboard.html" class="nav-item">
+    <i class="fas fa-user-circle"></i>
+    <span>Profile</span>
+  </a>
+</div>
+
+<!-- ══════════ JAVASCRIPT ══════════ -->
+<script>
+
+/* ══════════════════════════════════
+   FIREBASE INIT
+══════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ══════════════════════════════════
+   GLOBAL STATE
+══════════════════════════════════ */
+let currentUserId    = null;
+let myReferralCode   = '';
+let myReferralLink   = '';
+let allDownlines     = [];     // full array of {level, userData, refData}
+let activeTab        = 'all';
+
+/* referral commission rates */
+const RATES = { 1: 0.25, 2: 0.02, 3: 0.01 };
+
+/* ══════════════════════════════════
+   LIVE CLOCK
+══════════════════════════════════ */
+function tickClock() {
+  document.getElementById('topClock').textContent =
+    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+/* ══════════════════════════════════
+   MONEY FORMAT
+══════════════════════════════════ */
+function fmt(n) {
+  const v = Number(n || 0);
+  if (v >= 1_000_000) return '₦' + (v / 1_000_000).toFixed(2) + 'M';
+  if (v >= 1_000)     return '₦' + (v / 1_000).toFixed(1) + 'K';
+  return '₦' + v.toLocaleString('en-NG', { minimumFractionDigits: 0 });
+}
+function fmtFull(n) {
+  return '₦' + Number(n || 0).toLocaleString('en-NG', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+}
+
+/* ══════════════════════════════════
+   AUTH STATE
+══════════════════════════════════ */
+auth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  currentUserId = user.uid;
+
+  /* ── Claim any pending referral credits first ── */
+  await claimPendingReferralCredits(currentUserId);
+
+  const userSnap = await db.collection('users').doc(currentUserId).get();
+  if (!userSnap.exists) { window.location.href = 'login.html'; return; }
+
+  const userData = userSnap.data();
+  const firstName = (userData.fullName || userData.username || 'U').split(' ')[0];
+  document.getElementById('avatarBox').textContent = firstName.charAt(0).toUpperCase();
+
+  /* Show wallet balance */
+  const walletBal = Number(userData.balance || 0);
+  const walletEl = document.getElementById('walletBalance');
+  if (walletEl) walletEl.textContent = '₦' + walletBal.toLocaleString('en-NG', {minimumFractionDigits:2});
+
+  /* Ensure referralCode exists in Firestore */
+  myReferralCode = userData.referralCode || '';
+  if (!myReferralCode) {
+    myReferralCode = (userData.username || currentUserId.slice(0, 8)) + '_' + currentUserId.slice(0, 5);
+    await db.collection('users').doc(currentUserId).update({ referralCode: myReferralCode });
+  }
+
+  /* Build referral link using actual site origin */
+  const origin = window.location.origin;
+  myReferralLink = `${origin}/signup.html?ref=${myReferralCode}`;
+  document.getElementById('refLinkDisplay').textContent = myReferralLink;
+
+  await loadAllDownlines();
+});
+
+/* ══════════════════════════════════
+   LOAD ALL 3 LEVELS OF DOWNLINES
+══════════════════════════════════ */
+async function loadAllDownlines() {
+  try {
+    allDownlines = [];
+
+    /* ── LEVEL 1: Users who were referred directly by me ── */
+    const level1Snap = await db.collection('users')
+      .where('referrerUid', '==', currentUserId)
+      .get();
+
+    const level1Users = level1Snap.docs.map(d => ({
+      uid: d.id,
+      ...d.data()
+    }));
+
+    for (const u of level1Users) {
+      const deposited = u.totalInvested || 0;
+      const earned    = deposited * RATES[1];
+      allDownlines.push({
+        level:     1,
+        uid:       u.uid,
+        fullName:  u.fullName || u.username || 'User',
+        email:     u.email || 'N/A',
+        deposited,
+        earned,
+        joinedAt:  u.createdAt || null
+      });
+    }
+
+    /* ── LEVEL 2: Users referred by my Level 1 referrals ── */
+    for (const l1User of level1Users) {
+      const level2Snap = await db.collection('users')
+        .where('referrerUid', '==', l1User.uid)
+        .get();
+
+      for (const d2 of level2Snap.docs) {
+        const u2 = d2.data();
+        const deposited = u2.totalInvested || 0;
+        const earned    = deposited * RATES[2];
+        allDownlines.push({
+          level:     2,
+          uid:       d2.id,
+          fullName:  u2.fullName || u2.username || 'User',
+          email:     u2.email || 'N/A',
+          deposited,
+          earned,
+          joinedAt:  u2.createdAt || null
+        });
+      }
+
+      /* ── LEVEL 3: Users referred by my Level 2 referrals ── */
+      const level2Users = level2Snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+      for (const l2User of level2Users) {
+        const level3Snap = await db.collection('users')
+          .where('referrerUid', '==', l2User.uid)
+          .get();
+
+        for (const d3 of level3Snap.docs) {
+          const u3 = d3.data();
+          const deposited = u3.totalInvested || 0;
+          const earned    = deposited * RATES[3];
+          allDownlines.push({
+            level:     3,
+            uid:       d3.id,
+            fullName:  u3.fullName || u3.username || 'User',
+            email:     u3.email || 'N/A',
+            deposited,
+            earned,
+            joinedAt:  u3.createdAt || null
+          });
+        }
+      }
+    }
+
+    /* ── Calculate totals ── */
+    const l1List = allDownlines.filter(d => d.level === 1);
+    const l2List = allDownlines.filter(d => d.level === 2);
+    const l3List = allDownlines.filter(d => d.level === 3);
+
+    const l1Earned = l1List.reduce((s, d) => s + d.earned, 0);
+    const l2Earned = l2List.reduce((s, d) => s + d.earned, 0);
+    const l3Earned = l3List.reduce((s, d) => s + d.earned, 0);
+    const totalEarned    = l1Earned + l2Earned + l3Earned;
+    const totalDeposited = allDownlines.reduce((s, d) => s + d.deposited, 0);
+
+    /* ── Update summary card ── */
+    document.getElementById('sumTotalRefs').textContent    = allDownlines.length;
+    document.getElementById('sumTotalEarned').textContent  = fmt(totalEarned);
+    document.getElementById('sumTotalDeposited').textContent = fmt(totalDeposited);
+
+    /* ── Update level cards ── */
+    document.getElementById('l1Count').textContent  = l1List.length;
+    document.getElementById('l2Count').textContent  = l2List.length;
+    document.getElementById('l3Count').textContent  = l3List.length;
+    document.getElementById('l1Earned').textContent = fmtFull(l1Earned) + ' earned';
+    document.getElementById('l2Earned').textContent = fmtFull(l2Earned) + ' earned';
+    document.getElementById('l3Earned').textContent = fmtFull(l3Earned) + ' earned';
+
+    /* ── Update Firestore referral counts ── */
+    await db.collection('users').doc(currentUserId).update({
+      referralCount:  allDownlines.length,
+      level1Count:    l1List.length,
+      level2Count:    l2List.length,
+      level3Count:    l3List.length,
+      totalRefEarnings: totalEarned
+    });
+
+    /* ── Render downline list ── */
+    renderDownlines(activeTab);
+
+  } catch (err) {
+    console.error('Referral load error:', err);
+    Swal.fire({
+      icon: 'error', title: 'Failed to Load Referrals',
+      text: 'Please check your connection and try again.',
+      confirmButtonColor: '#0052FF'
+    });
+  }
+}
+
+/* ══════════════════════════════════
+   RENDER DOWNLINE CARDS
+══════════════════════════════════ */
+function renderDownlines(filter) {
+  const list = document.getElementById('downlineList');
+  list.innerHTML = '';
+
+  const filtered = filter === 'all'
+    ? allDownlines
+    : allDownlines.filter(d => String(d.level) === String(filter));
+
+  if (filtered.length === 0) {
+    const msg = filter === 'all'
+      ? 'You haven\'t referred anyone yet.'
+      : `No Level ${filter} referrals yet.`;
+
+    list.innerHTML = `
+      <div class="empty-box">
+        <div class="empty-emoji">👥</div>
+        <div class="empty-title">No Referrals Found</div>
+        <div class="empty-sub">${msg}<br>Share your link to start earning!</div>
+        <button class="empty-cta" onclick="copyLink()">Copy Your Link</button>
+      </div>`;
+    return;
+  }
+
+  filtered.forEach((d, i) => {
+    const card = document.createElement('div');
+    card.className = 'downline-card';
+    card.style.animationDelay = (i * 0.05) + 's';
+
+    const initial  = (d.fullName || 'U').charAt(0).toUpperCase();
+    const avatarCls = `dl-av-l${d.level}`;
+    const chipCls   = `lv${d.level}`;
+    const lvLabel   = `Level ${d.level} (${d.level === 1 ? '25%' : d.level === 2 ? '2%' : '1%'})`;
+
+    let joinedStr = '—';
+    if (d.joinedAt) {
+      try {
+        const dt = d.joinedAt.toDate ? d.joinedAt.toDate() : new Date(d.joinedAt);
+        joinedStr = dt.toLocaleDateString('en-NG', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        });
+      } catch(e) {}
+    }
+
+    card.innerHTML = `
+      <div class="dl-avatar ${avatarCls}">${initial}</div>
+      <div class="dl-info">
+        <div class="dl-name">${d.fullName}</div>
+        <div class="dl-email">${d.email}</div>
+        <div class="dl-meta">
+          <span class="dl-chip ${chipCls}">${lvLabel}</span>
+          <span class="dl-chip date"><i class="fas fa-calendar-alt" style="font-size:9px;"></i> ${joinedStr}</span>
+        </div>
+      </div>
+      <div class="dl-amounts">
+        <div class="dl-deposited">Deposited: <span>${fmtFull(d.deposited)}</span></div>
+        <div class="dl-earned-lbl">You Earned</div>
+        <div class="dl-earned">${fmtFull(d.earned)}</div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════
+   TAB SWITCHER
+══════════════════════════════════ */
+function switchTab(level, btn) {
+  activeTab = level;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDownlines(level);
+}
+
+/* ══════════════════════════════════
+   COPY LINK
+══════════════════════════════════ */
+function copyLink() {
+  const btn = document.getElementById('copyBtn');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(myReferralLink).then(() => {
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
+    }).catch(() => fallbackCopy());
+  } else {
+    fallbackCopy();
+  }
+}
+
+function fallbackCopy() {
+  const btn = document.getElementById('copyBtn');
+  const el = document.createElement('textarea');
+  el.value = myReferralLink;
+  el.style.cssText = 'position:fixed;opacity:0;';
+  document.body.appendChild(el);
+  el.select();
+  try {
+    document.execCommand('copy');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
+  } catch(e) {
+    Swal.fire({ icon: 'info', title: 'Copy this link manually:', text: myReferralLink });
+  }
+  document.body.removeChild(el);
+}
+
+/* ══════════════════════════════════
+   SHARE BUTTONS
+══════════════════════════════════ */
+function shareWhatsApp() {
+  const msg = encodeURIComponent(
+    `💰 Join Cashpoint and start earning daily returns on your investments!\n\nUse my referral link to sign up and we BOTH get rewarded:\n${myReferralLink}`
+  );
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+function shareTelegram() {
+  const msg = encodeURIComponent(
+    `💰 Join Cashpoint — daily investment returns!\n${myReferralLink}`
+  );
+  window.open(`https://t.me/share/url?url=${encodeURIComponent(myReferralLink)}&text=${msg}`, '_blank');
+}
+
+function shareNative() {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Join Cashpoint',
+      text: '💰 Join me on Cashpoint and start earning daily investment returns!',
+      url: myReferralLink
+    }).catch(() => copyLink());
+  } else {
+    copyLink();
+  }
+}
+
+
+/* ══════════════════════════════════
+   CLAIM PENDING REFERRAL CREDITS
+   Reads unclaimed referral_credits where uplineUid == me
+   and credits my own balance (self-update always allowed by rules).
+   Also shows a toast notification when credits are found.
+══════════════════════════════════ */
+async function claimPendingReferralCredits(userUid) {
+  if (!userUid) return;
+  try {
+    const snap = await db.collection('referral_credits')
+      .where('uplineUid', '==', userUid)
+      .where('claimed', '==', false)
+      .get();
+
+    if (snap.empty) return;
+
+    console.log(`[Credits] ${snap.size} unclaimed referral credit(s) found for ${userUid}`);
+
+    let total = 0;
+    const batch = db.batch();
+
+    snap.docs.forEach(doc => {
+      const bonus = Number(doc.data().bonusAmount || 0);
+      if (bonus <= 0) return;
+
+      /* Update own balance — self-update is allowed by Firestore rules */
+      batch.update(db.collection('users').doc(userUid), {
+        balance:          firebase.firestore.FieldValue.increment(bonus),
+        totalEarnings:    firebase.firestore.FieldValue.increment(bonus),
+        totalRefEarnings: firebase.firestore.FieldValue.increment(bonus)
+      });
+
+      /* Mark credit as claimed so it's never double-applied */
+      batch.update(doc.ref, {
+        claimed:   true,
+        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      total += bonus;
+    });
+
+    await batch.commit();
+    console.log(`[Credits] ✅ Claimed ₦${total} in referral credits`);
+
+    /* Show a toast notification */
+    if (total > 0) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `💰 ₦${total.toLocaleString('en-NG')} referral bonus credited!`,
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true
+      });
+    }
+
+  } catch(e) {
+    console.warn('[Credits] Claim error:', e.code, e.message);
+  }
+}
+</script>
+</body>
+</html>

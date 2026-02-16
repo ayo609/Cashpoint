@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint Admin | Support Chat</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --primary:#0052FF;--primary-dark:#0039b3;
+  --accent:#00C48C;--danger:#FF4D6D;
+  --warning:#FFB800;--text:#0D1B3E;
+  --muted:#6B7A99;--border:#D8E0F0;
+  --bg:#F0F4FF;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+.topbar{background:white;border-bottom:2px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(0,82,255,0.07);z-index:10;}
+.tb-left{display:flex;align-items:center;gap:10px;}
+.back-btn{width:34px;height:34px;border-radius:10px;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;font-size:15px;transition:background .2s;}
+.back-btn:hover{background:var(--border);}
+.tb-title{font-family:'Sora',sans-serif;font-size:16px;font-weight:700;}
+.unread-pill{background:var(--danger);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;display:none;}
+
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* LEFT */
+.left{width:300px;flex-shrink:0;background:white;border-right:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.left-head{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;}
+.search-box{display:flex;align-items:center;gap:7px;background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:0 11px;transition:border-color .2s;}
+.search-box:focus-within{border-color:var(--primary);}
+.search-box i{color:var(--muted);font-size:12px;}
+.search-box input{flex:1;border:none;background:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);padding:8px 0;}
+.filter-tabs{display:flex;gap:5px;}
+.ftab{flex:1;padding:6px 2px;font-size:11px;font-weight:700;font-family:inherit;border:2px solid var(--border);background:var(--bg);border-radius:9px;cursor:pointer;color:var(--muted);transition:all .2s;text-align:center;}
+.ftab.active{background:var(--primary);border-color:var(--primary);color:white;}
+.user-list{flex:1;overflow-y:auto;}
+.user-list::-webkit-scrollbar{width:3px;}
+.user-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+/* User row */
+.u-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative;}
+.u-row:hover{background:#F8FAFF;}
+.u-row.selected{background:#EEF3FF;border-left:3px solid var(--primary);}
+.u-row.has-unread .u-name{color:var(--primary);font-weight:800;}
+.u-av{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;color:white;}
+.u-info{flex:1;min-width:0;}
+.u-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.u-preview{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.u-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+.u-time{font-size:10.5px;color:var(--muted);font-weight:600;}
+.u-badge{background:var(--danger);color:white;border-radius:99px;font-size:9.5px;font-weight:800;padding:1px 6px;min-width:17px;text-align:center;}
+.new-tag{font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1px 5px;}
+.empty-list{text-align:center;padding:40px 16px;color:var(--muted);}
+.empty-list i{font-size:36px;margin-bottom:10px;opacity:.5;}
+
+/* RIGHT */
+.right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:10px;}
+.chat-empty i{font-size:56px;opacity:.3;}
+.chat-empty-title{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:var(--text);}
+.chat-empty-sub{font-size:13px;font-weight:600;text-align:center;max-width:240px;line-height:1.5;}
+
+.chat-area{display:none;flex:1;flex-direction:column;overflow:hidden;}
+
+.chat-head{background:white;border-bottom:2px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:11px;flex-shrink:0;}
+.ch-av{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0;}
+.ch-name{font-size:14.5px;font-weight:700;}
+.ch-email{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px;}
+.live-dot{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--accent);}
+.live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.chat-body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;}
+.chat-body::-webkit-scrollbar{width:4px;}
+.chat-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+.date-sep{text-align:center;font-size:11px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:8px;margin:4px 0;}
+.date-sep::before,.date-sep::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.msg-row{display:flex;align-items:flex-end;gap:8px;}
+.msg-row.from-admin{flex-direction:row-reverse;}
+.msg-av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;color:white;}
+.msg-inner{max-width:70%;}
+.msg-lbl{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;padding:0 2px;}
+.msg-row.from-admin .msg-lbl{text-align:right;}
+.bubble{padding:10px 13px;border-radius:15px;font-size:13.5px;line-height:1.55;word-break:break-word;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.bubble.user{background:white;border:1.5px solid var(--border);border-bottom-left-radius:4px;}
+.bubble.admin-b{background:var(--primary);color:white;border-bottom-right-radius:4px;}
+.msg-time{font-size:10px;color:var(--muted);font-weight:600;margin-top:3px;padding:0 2px;}
+.msg-row.from-admin .msg-time{text-align:right;}
+
+.no-msgs{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:8px;}
+.no-msgs i{font-size:40px;opacity:.25;}
+
+.chat-footer{background:white;border-top:2px solid var(--border);padding:12px 16px;flex-shrink:0;}
+.input-row{display:flex;gap:8px;align-items:flex-end;}
+.reply-ta{flex:1;padding:10px 13px;border:2px solid var(--border);border-radius:13px;font-size:13.5px;font-family:inherit;resize:none;outline:none;min-height:44px;max-height:110px;line-height:1.5;transition:border-color .2s;color:var(--text);}
+.reply-ta:focus{border-color:var(--primary);}
+.send-btn{width:44px;height:44px;border-radius:13px;border:none;background:var(--primary);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:opacity .2s,transform .15s;box-shadow:0 4px 12px rgba(0,82,255,0.3);}
+.send-btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}
+.send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.input-hint{font-size:11px;color:var(--muted);font-weight:600;margin-top:6px;}
+
+.skel{background:linear-gradient(90deg,#f0f4ff 25%,#e0e8ff 50%,#f0f4ff 75%);background-size:200% 100%;border-radius:6px;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:640px){
+  .left{position:fixed;inset:0;z-index:50;transform:translateX(-100%);transition:transform .3s;width:100%;}
+  .left.show{transform:translateX(0);}
+  .back-to-list{display:flex!important;}
+}
+.back-to-list{display:none;align-items:center;gap:5px;background:none;border:none;font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;padding:0;font-family:inherit;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-left">
+    <a class="back-btn" href="admin-dashboard.html"><i class="fas fa-arrow-left"></i></a>
+    <div class="tb-title">🎧 Support Chat</div>
+    <span class="unread-pill" id="totalUnread">0</span>
+  </div>
+  <span style="font-size:12px;font-weight:700;color:var(--muted);" id="userCount">Loading...</span>
+</div>
+
+<div class="layout">
+
+  <div class="left" id="leftPanel">
+    <div class="left-head">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input id="searchInput" placeholder="Search by name, email or phone..." oninput="renderList()"/>
+      </div>
+      <div class="filter-tabs">
+        <button class="ftab active" onclick="setFilter('all',this)">All Users</button>
+        <button class="ftab" onclick="setFilter('messages',this)">Messaged</button>
+        <button class="ftab" onclick="setFilter('unread',this)">Unread</button>
+      </div>
+    </div>
+    <div class="user-list" id="userList">
+      <div style="padding:11px 14px;border-bottom:1px solid var(--border);"><div style="display:flex;gap:10px;align-items:center;"><div style="width:38px;height:38px;border-radius:11px;" class="skel"></div><div style="flex:1;"><div class="skel" style="width:110px;height:13px;margin-bottom:6px;"></div><div class="skel" style="width:160px;height:11px;"></div></div></div></div>
+      <div style="padding:11px 14px;border-bottom:1px solid var(--border);"><div style="display:flex;gap:10px;align-items:center;"><div style="width:38px;height:38px;border-radius:11px;" class="skel"></div><div style="flex:1;"><div class="skel" style="width:90px;height:13px;margin-bottom:6px;"></div><div class="skel" style="width:140px;height:11px;"></div></div></div></div>
+      <div style="padding:11px 14px;"><div style="display:flex;gap:10px;align-items:center;"><div style="width:38px;height:38px;border-radius:11px;" class="skel"></div><div style="flex:1;"><div class="skel" style="width:130px;height:13px;margin-bottom:6px;"></div><div class="skel" style="width:180px;height:11px;"></div></div></div></div>
+    </div>
+  </div>
+
+  <div class="right" id="rightPanel">
+
+    <div class="chat-empty" id="chatEmpty">
+      <i class="fas fa-comments"></i>
+      <div class="chat-empty-title">Select a user</div>
+      <div class="chat-empty-sub">Every user on Cashpoint appears in the left panel. Click any one to view or start a conversation.</div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <div class="chat-head">
+        <button class="back-to-list" onclick="showList()"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="ch-av" id="chAv">U</div>
+        <div>
+          <div class="ch-name" id="chName">—</div>
+          <div class="ch-email" id="chEmail">—</div>
+        </div>
+        <div class="live-dot">Live</div>
+      </div>
+
+      <div class="chat-body" id="chatBody"></div>
+
+      <div class="chat-footer">
+        <div class="input-row">
+          <textarea class="reply-ta" id="replyInput" placeholder="Type your reply..." onkeydown="handleKey(event)" oninput="autoGrow(this)" rows="1"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendReply()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <div class="input-hint"><i class="fas fa-bolt"></i> Enter to send &nbsp;·&nbsp; Shift+Enter for new line &nbsp;·&nbsp; User sees your reply instantly</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ── State ── */
+let allUsers        = {};
+let allThreads      = {};
+let activeUid       = null;
+let msgListener     = null;
+let usersListener   = null;
+let threadsListener = null;
+let listFilter      = 'all';
+
+/* ── Helpers ── */
+const ini = s => (s||'?').charAt(0).toUpperCase();
+const esc = s => String(s||'')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+
+const COLORS = ['#0052FF','#00C48C','#FF4D6D','#FFB800','#7C3AED','#0891B2','#DC2626','#059669','#D97706','#DB2777'];
+const avatarBg = uid => {
+  let h = 0;
+  for (let i=0; i<(uid||'').length; i++) h = (h*31 + uid.charCodeAt(i)) & 0xffff;
+  return COLORS[Math.abs(h) % COLORS.length];
+};
+
+const fmtTime = ts => {
+  if (!ts) return '';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const diff = Date.now() - d;
+    if (diff < 60000)    return 'just now';
+    if (diff < 3600000)  return Math.floor(diff/60000) + 'm ago';
+    if (diff < 86400000) return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleDateString('en-NG',{day:'2-digit',month:'short'});
+  } catch(e){ return ''; }
+};
+const fmtMsgTime = ts => {
+  if (!ts) return '';
+  try { return (ts.toDate?ts.toDate():new Date(ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return ''; }
+};
+const fmtDateSep = ts => {
+  if (!ts) return 'Today';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const diff = Date.now() - d;
+    if (diff < 86400000)  return 'Today';
+    if (diff < 172800000) return 'Yesterday';
+    return d.toLocaleDateString('en-NG',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
+  } catch(e){ return ''; }
+};
+
+/* ════════════════════════════════
+   AUTH
+════════════════════════════════ */
+auth.onAuthStateChanged(async u => {
+  if (!u) { window.location.href = 'admin-login.html'; return; }
+  try {
+    const snap = await db.collection('users').doc(u.uid).get();
+    if (snap.exists && snap.data().isAdmin === false) {
+      /* Explicitly non-admin — redirect */
+      alert('Admin access only.'); auth.signOut();
+      window.location.href = 'admin-login.html'; return;
+    }
+    /* If doc missing or isAdmin not set, allow and continue
+       (avoids lock-out if rules block the admin check itself) */
+  } catch(e) {
+    console.warn('Admin check error (continuing anyway):', e.code, e.message);
+  }
+
+  listenToUsers();
+  listenToThreads();
+});
+
+/* ════════════════════════════════
+   LOAD ALL USERS (real-time)
+   THE KEY FIX: admin sees every
+   single user, not just those who
+   sent a support message.
+════════════════════════════════ */
+function listenToUsers() {
+  if (usersListener) usersListener();
+
+  /* No orderBy — avoids needing a composite index. Sort client-side instead. */
+  usersListener = db.collection('users')
+    .onSnapshot(snap => {
+      allUsers = {};
+      snap.docs.forEach(d => {
+        const data = d.data();
+        /* Include ALL users — admin sees everyone including those without messages */
+        if (!data.isAdmin) allUsers[d.id] = { uid: d.id, ...data };
+      });
+      const count = Object.keys(allUsers).length;
+      document.getElementById('userCount').textContent =
+        count + ' user' + (count !== 1 ? 's' : '');
+      renderList();
+    }, err => {
+      console.error('Users listener error:', err.code, err.message);
+      document.getElementById('userCount').textContent = 'Failed to load users';
+      document.getElementById('userList').innerHTML = `
+        <div class="empty-list">
+          <i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i>
+          <div style="font-size:13px;font-weight:700;margin-top:8px;color:var(--danger);">
+            ${err.code === 'permission-denied'
+              ? 'Permission denied — update Firestore rules to allow admin reads'
+              : 'Failed to load: ' + (err.message || err.code)
+            }
+          </div>
+        </div>`;
+    });
+}
+
+/* ════════════════════════════════
+   LOAD ALL THREADS (real-time)
+   Merged with users to show last
+   message preview & unread counts.
+════════════════════════════════ */
+function listenToThreads() {
+  if (threadsListener) threadsListener();
+
+  threadsListener = db.collection('support_threads')
+    .onSnapshot(snap => {
+      allThreads = {};
+      snap.docs.forEach(d => { allThreads[d.id] = { id: d.id, ...d.data() }; });
+      updateUnreadBadge();
+      renderList();
+    }, err => {
+      console.error('Threads listener error:', err.code, err.message);
+      /* Non-fatal — threads just won't show message previews */
+    });
+}
+
+function updateUnreadBadge() {
+  const total = Object.values(allThreads).reduce((s,t) => s + Number(t.unreadByAdmin||0), 0);
+  const el = document.getElementById('totalUnread');
+  if (total > 0) { el.textContent = total; el.style.display = 'inline'; }
+  else el.style.display = 'none';
+}
+
+/* ════════════════════════════════
+   RENDER USER LIST
+════════════════════════════════ */
+function setFilter(f, btn) {
+  listFilter = f;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function renderList() {
+  const q   = (document.getElementById('searchInput').value || '').toLowerCase();
+  const all = Object.values(allUsers);
+
+  const visible = all.filter(u => {
+    const t = allThreads[u.uid];
+    if (listFilter === 'messages' && !t) return false;
+    if (listFilter === 'unread'   && !(t?.unreadByAdmin > 0)) return false;
+    if (!q) return true;
+    return [(u.fullName||''),(u.email||''),(u.username||''),(u.phone||'')]
+      .some(v => v.toLowerCase().includes(q));
+  });
+
+  /* Sort: unread → has recent message → newest signup */
+  visible.sort((a, b) => {
+    const ta = allThreads[a.uid], tb = allThreads[b.uid];
+    const ua = Number(ta?.unreadByAdmin||0), ub = Number(tb?.unreadByAdmin||0);
+    if (ua !== ub) return ub - ua;
+    const la = ta?.lastMessageAt?.toMillis?.() || 0;
+    const lb = tb?.lastMessageAt?.toMillis?.() || 0;
+    if (la !== lb) return lb - la;
+    return (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+  });
+
+  const container = document.getElementById('userList');
+
+  if (!visible.length) {
+    container.innerHTML = `<div class="empty-list"><i class="fas fa-users-slash"></i><div style="font-size:13px;font-weight:700;margin-top:8px;">${all.length===0?'No users registered yet':'No results'}</div></div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  visible.forEach(u => {
+    const t      = allThreads[u.uid];
+    const unread = Number(t?.unreadByAdmin || 0);
+    const color  = avatarBg(u.uid);
+    const row    = document.createElement('div');
+    row.className = `u-row${u.uid===activeUid?' selected':''}${unread>0?' has-unread':''}`;
+    row.onclick   = () => openChat(u.uid);
+
+    const preview = t?.lastMessage
+      ? esc(t.lastMessage).replace(/<br>/g,' ').substring(0,50) + (t.lastMessage.length>50?'…':'')
+      : '<span style="font-style:italic;color:var(--muted);">No messages — click to start chat</span>';
+
+    row.innerHTML = `
+      <div class="u-av" style="background:${color};">${ini(u.fullName||u.username)}</div>
+      <div class="u-info">
+        <div class="u-name">${u.fullName||u.username||'Unknown'}</div>
+        <div class="u-preview">${preview}</div>
+      </div>
+      <div class="u-meta">
+        ${t?.lastMessageAt ? `<div class="u-time">${fmtTime(t.lastMessageAt)}</div>` : `<div class="new-tag">New</div>`}
+        ${unread>0 ? `<div class="u-badge">${unread}</div>` : ''}
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+/* ════════════════════════════════
+   OPEN CHAT — any user
+════════════════════════════════ */
+function openChat(uid) {
+  if (activeUid === uid) { showChat(); return; }
+  if (msgListener) { msgListener(); msgListener = null; }
+
+  activeUid = uid;
+  const u   = allUsers[uid] || {};
+  const col = avatarBg(uid);
+
+  document.getElementById('chAv').textContent          = ini(u.fullName||u.username);
+  document.getElementById('chAv').style.background     = `linear-gradient(135deg,${col},${col}bb)`;
+  document.getElementById('chName').textContent        = u.fullName||u.username||'Unknown';
+  document.getElementById('chEmail').textContent       = [u.email, u.phone].filter(Boolean).join(' · ') || '—';
+
+  showChat();
+  renderList();
+
+  const body = document.getElementById('chatBody');
+  body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>`;
+
+  /* Mark as read */
+  db.collection('support_threads').doc(uid).update({ unreadByAdmin: 0 }).catch(()=>{});
+
+  /* Listen to this user's messages (threadId == uid) */
+  const startListen = (query) => query.onSnapshot(snap => {
+    const docs = snap.docs.slice().sort((a,b) =>
+      (a.data().createdAt?.toMillis?.() || 0) - (b.data().createdAt?.toMillis?.() || 0)
+    );
+    renderMessages(docs);
+  }, err => {
+    console.error('Msg listener err:', err.code);
+  });
+
+  /* Simple query — no orderBy to avoid composite index requirement.
+     Messages are sorted client-side in renderMessages via sort(). */
+  msgListener = startListen(
+    db.collection('support_messages').where('threadId', '==', uid)
+  );
+}
+
+/* ════════════════════════════════
+   RENDER MESSAGES
+════════════════════════════════ */
+function renderMessages(docs) {
+  const body = document.getElementById('chatBody');
+  const u    = allUsers[activeUid] || {};
+  const col  = avatarBg(activeUid);
+  const wasBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 60;
+
+  if (!docs.length) {
+    body.innerHTML = `
+      <div class="no-msgs">
+        <i class="fas fa-comment-dots"></i>
+        <div style="font-size:14px;font-weight:700;color:var(--text);">No messages yet</div>
+        <div style="font-size:12.5px;color:var(--muted);">Send the first message to ${u.fullName||'this user'} below</div>
+      </div>`;
+    return;
+  }
+
+  body.innerHTML = '';
+  let lastDate = '';
+
+  docs.forEach(doc => {
+    const m       = doc.data();
+    const isAdmin = m.sender === 'admin';
+    const dateStr = fmtDateSep(m.createdAt);
+
+    if (dateStr !== lastDate) {
+      lastDate = dateStr;
+      const sep = document.createElement('div');
+      sep.className = 'date-sep';
+      sep.textContent = dateStr;
+      body.appendChild(sep);
+    }
+
+    const row = document.createElement('div');
+    row.className = `msg-row${isAdmin?' from-admin':''}`;
+    row.innerHTML = `
+      <div class="msg-av" style="background:${isAdmin?'linear-gradient(135deg,#0052FF,#001c6b)':`linear-gradient(135deg,${col},${col}bb)`};">
+        ${isAdmin ? '🎧' : ini(u.fullName||u.username)}
+      </div>
+      <div class="msg-inner">
+        <div class="msg-lbl">${isAdmin ? 'You (Admin)' : (u.fullName||u.username||'User')}</div>
+        <div class="bubble ${isAdmin?'admin-b':'user'}">${esc(m.message)}</div>
+        <div class="msg-time">${fmtMsgTime(m.createdAt)}</div>
+      </div>`;
+    body.appendChild(row);
+  });
+
+  if (wasBottom) body.scrollTop = body.scrollHeight;
+}
+
+/* ════════════════════════════════
+   SEND ADMIN REPLY
+════════════════════════════════ */
+async function sendReply() {
+  const input = document.getElementById('replyInput');
+  const btn   = document.getElementById('sendBtn');
+  const text  = input.value.trim();
+  if (!text || !activeUid) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  btn.disabled = true;
+
+  const u   = allUsers[activeUid] || {};
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+
+  try {
+    await db.collection('support_messages').add({
+      threadId:  activeUid,
+      userId:    activeUid,
+      userName:  'Admin',
+      message:   text,
+      sender:    'admin',
+      createdAt: now,
+      read:      false
+    });
+
+    await db.collection('support_threads').doc(activeUid).set({
+      userId:        activeUid,
+      userName:      u.fullName || u.username || 'User',
+      userEmail:     u.email || '',
+      lastMessage:   text,
+      lastMessageAt: now,
+      status:        'open',
+      unreadByAdmin: 0,
+      unreadByUser:  firebase.firestore.FieldValue.increment(1),
+      updatedAt:     now
+    }, { merge: true });
+
+  } catch(err) {
+    console.error('Send error:', err.code, err.message);
+    alert('Send failed: ' + (err.message || err.code));
+    input.value = text;
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+/* ════════════════════════════════
+   UI HELPERS
+════════════════════════════════ */
+function showChat() {
+  document.getElementById('chatEmpty').style.display = 'none';
+  document.getElementById('chatArea').style.display  = 'flex';
+  document.getElementById('leftPanel').classList.remove('show');
+}
+function showList() {
+  document.getElementById('leftPanel').classList.add('show');
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
+}
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+</script>
+</body>
+</html>
