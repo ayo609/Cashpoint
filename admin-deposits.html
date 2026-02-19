@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Deposits</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="cashpoint-modal.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --primary:#0052FF;--danger:#FF4D6D;--warning:#FFB800;--success:#00C48C;
+  --text:#0D1B3E;--muted:#6B7A99;--border:#D8E0F0;--bg:#F0F4FF;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:20px;}
+
+/* ══════════ TOPBAR ══════════ */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 16px;height:60px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,82,255,0.06);}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);text-decoration:none;transition:background .2s;flex-shrink:0;}
+.back-btn:hover{background:var(--border);}
+.page-title{font-family:'Sora',sans-serif;font-size:17px;font-weight:800;flex:1;}
+
+/* ══════════ SUMMARY CARDS ══════════ */
+.summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;padding:16px;max-width:1200px;margin:0 auto;}
+.scard{background:white;border-radius:14px;padding:16px;box-shadow:0 3px 12px rgba(0,82,255,0.06);border:1px solid var(--border);}
+.scard-val{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;margin-bottom:3px;color:var(--text);}
+.scard-lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
+
+/* ══════════ FILTER BAR ══════════ */
+.filter-bar{padding:0 16px 16px;max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+.search-wrap{display:flex;align-items:center;gap:8px;background:white;border:2px solid var(--border);border-radius:12px;padding:0 14px;transition:border-color .2s;}
+.search-wrap:focus-within{border-color:var(--primary);}
+.search-wrap i{color:var(--muted);font-size:14px;}
+.search-input{flex:1;border:none;background:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);padding:11px 0;}
+.filter-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.fbtn{padding:9px 16px;border-radius:10px;border:2px solid var(--border);background:white;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .2s;position:relative;white-space:nowrap;}
+.fbtn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.fbtn .cnt{position:absolute;top:-8px;right:-8px;background:var(--danger);color:white;border-radius:99px;font-size:9px;font-weight:700;padding:2px 6px;min-width:18px;text-align:center;}
+.refresh-btn{padding:9px 14px;border-radius:10px;border:2px solid var(--border);background:white;cursor:pointer;color:var(--muted);font-size:13px;font-weight:700;transition:all .2s;flex-shrink:0;display:flex;align-items:center;gap:6px;margin-left:auto;}
+.refresh-btn:hover{border-color:var(--primary);color:var(--primary);}
+.refresh-btn i{font-size:14px;}
+.spin{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════ DEPOSIT CARDS (Mobile First) ══════════ */
+.deposits-container{padding:0 16px;max-width:1200px;margin:0 auto;}
+.dep-card{background:white;border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 3px 14px rgba(0,82,255,0.08);border:1px solid var(--border);transition:transform .2s,box-shadow .2s;}
+.dep-card:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(0,82,255,0.12);}
+
+.dep-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+.dep-user{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.dep-av{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#001c6b);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0;}
+.dep-user-info{min-width:0;flex:1;}
+.dep-user-name{font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dep-user-email{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.badge{display:inline-flex;align-items:center;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;flex-shrink:0;}
+.badge.pending{background:#FFF8E8;color:var(--warning);}
+.badge.approved{background:#E8FFF6;color:var(--success);}
+.badge.rejected{background:#FFF0F3;color:var(--danger);}
+
+.dep-amount{background:linear-gradient(135deg,#E8FFF6,#D0F5E8);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #B8EBD6;}
+.dep-amount-lbl{font-size:11px;color:#00A876;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;}
+.dep-amount-val{font-family:'Sora',sans-serif;font-size:26px;font-weight:800;color:#00875A;}
+
+.dep-details{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px;}
+.dep-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.dep-row:last-child{border-bottom:none;}
+.dep-row-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+.dep-row-val{font-size:13px;font-weight:700;text-align:right;word-break:break-word;max-width:60%;}
+.ref-code{font-size:11px;background:var(--bg);padding:4px 10px;border-radius:7px;font-weight:800;color:var(--primary);font-family:monospace;letter-spacing:0.5px;}
+
+.dep-sender{background:#E8F0FF;border:1px solid #C0D4FF;border-radius:10px;padding:10px 12px;margin-bottom:12px;}
+.dep-sender-lbl{font-size:10px;color:#0052FF;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;}
+.dep-sender-val{font-size:14px;font-weight:800;color:#0039B8;}
+
+.dep-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.act-btn{flex:1;min-width:100px;padding:11px 16px;border-radius:11px;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.act-btn:active{transform:scale(0.98);}
+.btn-approve{background:#E8FFF6;color:var(--success);border:1.5px solid #B8EBD6;}
+.btn-approve:hover{background:var(--success);color:white;}
+.btn-reject{background:#FFF0F3;color:var(--danger);border:1.5px solid #FFD0D9;}
+.btn-reject:hover{background:var(--danger);color:white;}
+.btn-view{background:#E8F0FF;color:var(--primary);border:1.5px solid #C0D4FF;}
+.btn-view:hover{background:var(--primary);color:white;}
+
+/* Skeleton */
+.skeleton{background:linear-gradient(90deg,#f0f4ff 25%,#e0e8ff 50%,#f0f4ff 75%);background-size:200% 100%;border-radius:8px;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-card{background:white;border-radius:16px;padding:18px;margin-bottom:12px;}
+.skeleton-row{height:16px;margin-bottom:12px;}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-icon{font-size:56px;margin-bottom:16px;opacity:0.4;}
+.empty-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Sora',sans-serif;}
+.empty-msg{font-size:13px;color:var(--muted);line-height:1.6;}
+
+/* ══════════ DETAIL MODAL ══════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:white;border-radius:24px;width:100%;max-width:500px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.3);animation:modalIn .35s cubic-bezier(.16,1,.3,1);}
+@keyframes modalIn{from{transform:translateY(20px) scale(.95)}to{transform:translateY(0) scale(1)}}
+
+.modal-head{padding:20px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-family:'Sora',sans-serif;font-size:19px;font-weight:800;}
+.modal-close{width:34px;height:34px;border-radius:10px;background:var(--bg);border:none;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;}
+.modal-close:hover{background:var(--border);}
+
+.modal-body{padding:18px 20px;overflow-y:auto;flex:1;}
+.mrow{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);gap:12px;}
+.mrow:last-child{border-bottom:none;}
+.mrow-lbl{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;}
+.mrow-val{font-size:13px;font-weight:700;text-align:right;word-break:break-word;flex:1;}
+
+.modal-sender{background:#E8F0FF;border:1.5px solid #C0D4FF;border-radius:12px;padding:14px;margin:12px 0;text-align:center;}
+.modal-sender-lbl{font-size:11px;color:#0052FF;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}
+.modal-sender-val{font-size:16px;font-weight:800;color:#0039B8;}
+
+.modal-screenshot{margin:14px 0;text-align:center;}
+.modal-screenshot-lbl{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;}
+.modal-screenshot img{width:100%;max-width:400px;border-radius:14px;cursor:pointer;border:2px solid var(--border);box-shadow:0 6px 20px rgba(0,82,255,0.12);transition:transform .2s;}
+.modal-screenshot img:hover{transform:scale(1.02);}
+.modal-screenshot-hint{font-size:10px;color:var(--muted);margin-top:6px;}
+
+.modal-actions{padding:18px 20px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;}
+.mbtn{flex:1;padding:13px;border-radius:12px;border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.mbtn:active{transform:scale(0.97);}
+.mbtn-approve{background:var(--success);color:white;}
+.mbtn-approve:hover{background:#00A876;}
+.mbtn-reject{background:var(--danger);color:white;}
+.mbtn-reject:hover{background:#d63851;}
+
+/* ══════════ RESPONSIVE ══════════ */
+@media(min-width:640px){
+  .dep-details{grid-template-columns:1fr 1fr;}
+  .dep-row{padding:10px 0;}
+}
+
+@media(min-width:768px){
+  .summary{padding:20px;}
+  .filter-bar{padding:0 20px 20px;flex-direction:row;align-items:center;}
+  .search-wrap{max-width:320px;}
+  .deposits-container{padding:0 20px;}
+}
+
+@media(max-width:480px){
+  .topbar{padding:0 12px;}
+  .page-title{font-size:15px;}
+  .summary{grid-template-columns:repeat(2,1fr);padding:12px;}
+  .scard{padding:14px;}
+  .scard-val{font-size:19px;}
+  .dep-amount-val{font-size:22px;}
+  .dep-actions{flex-direction:column;}
+  .act-btn{min-width:auto;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="admin-dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+  <div class="page-title">💳 Deposits</div>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="summary" id="summary">
+  <div class="scard">
+    <div class="scard-val" id="totalCount">—</div>
+    <div class="scard-lbl">Total Deposits</div>
+  </div>
+  <div class="scard">
+    <div class="scard-val" id="pendingCount">—</div>
+    <div class="scard-lbl">Pending</div>
+  </div>
+  <div class="scard">
+    <div class="scard-val" id="approvedCount">—</div>
+    <div class="scard-lbl">Approved</div>
+  </div>
+  <div class="scard">
+    <div class="scard-val" id="rejectedCount">—</div>
+    <div class="scard-lbl">Rejected</div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search by name, email, amount..." oninput="renderDeposits()"/>
+  </div>
+  <div class="filter-btns">
+    <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('pending',this)">
+      Pending
+      <span class="cnt" id="pendingBadge" style="display:none;">0</span>
+    </button>
+    <button class="fbtn" onclick="setFilter('approved',this)">Approved</button>
+    <button class="fbtn" onclick="setFilter('rejected',this)">Rejected</button>
+  </div>
+  <button class="refresh-btn" onclick="loadDeposits()">
+    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+    <span>Refresh</span>
+  </button>
+</div>
+
+<!-- DEPOSITS LIST -->
+<div class="deposits-container" id="depositsContainer">
+  <!-- Skeleton loading -->
+  <div class="skeleton-card">
+    <div class="skeleton skeleton-row" style="width:60%;"></div>
+    <div class="skeleton skeleton-row" style="width:80%;"></div>
+    <div class="skeleton skeleton-row" style="width:50%;"></div>
+  </div>
+  <div class="skeleton-card">
+    <div class="skeleton skeleton-row" style="width:70%;"></div>
+    <div class="skeleton skeleton-row" style="width:75%;"></div>
+    <div class="skeleton skeleton-row" style="width:55%;"></div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Deposit Details</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <!-- Populated by JS -->
+    </div>
+    <div class="modal-actions" id="modalActions">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey:"AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:"cashpoint-ac4f4.firebaseapp.com",
+  projectId:"cashpoint-ac4f4",
+  storageBucket:"cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId:"16133206416",
+  appId:"1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.firestore();
+
+let allDeposits=[];
+let currentFilter='all';
+let activeDeposit=null;
+
+const fmtN=n=>Number(n||0).toLocaleString('en-NG',{minimumFractionDigits:2});
+const fmtDT=ts=>{
+  if(!ts)return'—';
+  try{
+    const d=ts.toDate?ts.toDate():new Date(ts);
+    return d.toLocaleDateString('en-NG',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch(e){return'—'}
+};
+const ini=s=>(s||'?').charAt(0).toUpperCase();
+
+/* ══════════════════════════════════
+   AUTH & LOAD
+══════════════════════════════════ */
+auth.onAuthStateChanged(async u=>{
+  if(!u){window.location.href='admin-login.html';return;}
+  try{
+    const snap=await db.collection('users').doc(u.uid).get();
+    if(!snap.exists||!snap.data().isAdmin){
+      alert('Admin access only.');auth.signOut();
+      window.location.href='admin-login.html';return;
+    }
+  }catch(e){console.warn('Admin check:',e.message);}
+  loadDeposits();
+});
+
+async function loadDeposits(){
+  const icon=document.getElementById('refreshIcon');
+  icon.classList.add('spin');
+  try{
+    const snap=await db.collection('deposits').get();
+    allDeposits=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+    
+    const pending=allDeposits.filter(d=>d.status==='pending').length;
+    const approved=allDeposits.filter(d=>d.status==='approved').length;
+    const rejected=allDeposits.filter(d=>d.status==='rejected').length;
+    
+    document.getElementById('totalCount').textContent=allDeposits.length;
+    document.getElementById('pendingCount').textContent=pending;
+    document.getElementById('approvedCount').textContent=approved;
+    document.getElementById('rejectedCount').textContent=rejected;
+    
+    const badge=document.getElementById('pendingBadge');
+    if(pending>0){badge.textContent=pending;badge.style.display='inline';}
+    else badge.style.display='none';
+    
+    renderDeposits();
+  }catch(e){
+    console.error('Load error:',e);
+    document.getElementById('depositsContainer').innerHTML=`
+      <div class="empty">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Failed to Load</div>
+        <div class="empty-msg">Check your connection and try again.</div>
+      </div>`;
+  }finally{
+    icon.classList.remove('spin');
+  }
+}
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDeposits();
+}
+
+function renderDeposits(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  let filtered=allDeposits;
+  
+  if(currentFilter!=='all')filtered=filtered.filter(d=>d.status===currentFilter);
+  
+  if(q)filtered=filtered.filter(d=>
+    (d.userName||'').toLowerCase().includes(q)||
+    (d.userEmail||'').toLowerCase().includes(q)||
+    (d.senderName||'').toLowerCase().includes(q)||
+    (d.refCode||'').toLowerCase().includes(q)||
+    String(d.amount||'').includes(q)
+  );
+  
+  const container=document.getElementById('depositsContainer');
+  
+  if(!filtered.length){
+    container.innerHTML=`
+      <div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">No Deposits Found</div>
+        <div class="empty-msg">${q?'Try a different search term':'No deposits match the current filter'}</div>
+      </div>`;
+    return;
+  }
+  
+  container.innerHTML='';
+  filtered.forEach(d=>{
+    const card=document.createElement('div');
+    card.className='dep-card';
+    card.innerHTML=`
+      <div class="dep-header">
+        <div class="dep-user">
+          <div class="dep-av">${ini(d.userName||d.userEmail)}</div>
+          <div class="dep-user-info">
+            <div class="dep-user-name">${d.userName||'Unknown'}</div>
+            <div class="dep-user-email">${d.userEmail||'—'}</div>
+          </div>
+        </div>
+        <span class="badge ${d.status||'pending'}">${(d.status||'pending').toUpperCase()}</span>
+      </div>
+      
+      <div class="dep-amount">
+        <div class="dep-amount-lbl">Deposit Amount</div>
+        <div class="dep-amount-val">₦${fmtN(d.amount)}</div>
+      </div>
+      
+      ${d.senderName?`
+        <div class="dep-sender">
+          <div class="dep-sender-lbl">💳 Sender Name</div>
+          <div class="dep-sender-val">${d.senderName}</div>
+        </div>
+      `:''}
+      
+      <div class="dep-details">
+        <div class="dep-row">
+          <div class="dep-row-lbl">Ref Code</div>
+          <div class="dep-row-val"><span class="ref-code">${d.refCode||'—'}</span></div>
+        </div>
+        <div class="dep-row">
+          <div class="dep-row-lbl">Bank</div>
+          <div class="dep-row-val">${d.bankName||'—'}</div>
+        </div>
+        <div class="dep-row">
+          <div class="dep-row-lbl">Account</div>
+          <div class="dep-row-val">${d.accountNumber||'—'}</div>
+        </div>
+        <div class="dep-row">
+          <div class="dep-row-lbl">Submitted</div>
+          <div class="dep-row-val">${fmtDT(d.createdAt)}</div>
+        </div>
+      </div>
+      
+      <div class="dep-actions">
+        ${d.status==='pending'?`
+          <button class="act-btn btn-approve" onclick='openModal("${d.id}","approve")'>
+            <i class="fas fa-check-circle"></i> Approve
+          </button>
+          <button class="act-btn btn-reject" onclick='openModal("${d.id}","reject")'>
+            <i class="fas fa-times-circle"></i> Reject
+          </button>
+        `:''}
+        <button class="act-btn btn-view" onclick='openModal("${d.id}","view")'>
+          <i class="fas fa-eye"></i> View Details
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════
+   MODAL
+══════════════════════════════════ */
+function openModal(id,action){
+  const d=allDeposits.find(dep=>dep.id===id);
+  if(!d)return;
+  activeDeposit=d;
+  
+  document.getElementById('modalTitle').textContent=
+    action==='approve'?'✅ Approve Deposit':
+    action==='reject'?'❌ Reject Deposit':'📋 Deposit Details';
+  
+  document.getElementById('modalBody').innerHTML=`
+    <div class="mrow"><span class="mrow-lbl">User</span><span class="mrow-val">${d.userName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Email</span><span class="mrow-val">${d.userEmail||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Amount</span><span class="mrow-val" style="color:var(--success);font-size:18px;font-family:'Sora',sans-serif;">₦${fmtN(d.amount)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Ref Code</span><span class="mrow-val"><span class="ref-code">${d.refCode||'—'}</span></span></div>
+    
+    ${d.senderName?`
+      <div class="modal-sender">
+        <div class="modal-sender-lbl">💳 Sender Name</div>
+        <div class="modal-sender-val">${d.senderName}</div>
+      </div>
+    `:''}
+    
+    ${d.screenshot?`
+      <div class="modal-screenshot">
+        <div class="modal-screenshot-lbl">📸 Payment Proof</div>
+        <img src="${d.screenshot}" onclick="window.open(this.src,'_blank')" 
+          title="Click to open full size" alt="Payment screenshot"/>
+        <div class="modal-screenshot-hint">
+          <i class="fas fa-info-circle"></i> Click image to view full size · ${d.screenshotName||'screenshot.jpg'}
+        </div>
+      </div>
+    `:''}
+    
+    <div class="mrow"><span class="mrow-lbl">Bank</span><span class="mrow-val">${d.bankName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Account No.</span><span class="mrow-val">${d.accountNumber||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Account Name</span><span class="mrow-val">${d.accountName||'—'}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Status</span><span class="mrow-val"><span class="badge ${d.status||'pending'}">${(d.status||'pending').toUpperCase()}</span></span></div>
+    ${d.adminNote?`<div class="mrow"><span class="mrow-lbl">Admin Note</span><span class="mrow-val" style="color:var(--danger);">${d.adminNote}</span></div>`:''}
+    ${d.approvedAt?`<div class="mrow"><span class="mrow-lbl">Approved At</span><span class="mrow-val">${fmtDT(d.approvedAt)}</span></div>`:''}
+    <div class="mrow"><span class="mrow-lbl">Submitted</span><span class="mrow-val">${fmtDT(d.createdAt)}</span></div>
+    <div class="mrow"><span class="mrow-lbl">User ID</span><span class="mrow-val" style="font-size:10.5px;color:var(--muted);">${d.userId||'—'}</span></div>
+  `;
+  
+  const actions=document.getElementById('modalActions');
+  if(d.status==='pending'&&action!=='view'){
+    actions.innerHTML=
+      action==='approve'?
+        `<button class="mbtn mbtn-approve" onclick="modalApprove()"><i class="fas fa-check-circle"></i> Approve & Credit</button>`:
+        `<button class="mbtn mbtn-reject" onclick="modalReject()"><i class="fas fa-times-circle"></i> Reject</button>`;
+  }else{
+    actions.innerHTML='';
+  }
+  
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+  activeDeposit=null;
+}
+
+async function modalApprove(){
+  if(!activeDeposit)return;
+  
+  const res=await Swal.fire({
+    title:'Approve Deposit?',
+    html:`Credit <strong>₦${fmtN(activeDeposit.amount)}</strong> to <strong>${activeDeposit.userName}</strong>?`,
+    icon:'question',
+    showCancelButton:true,
+    confirmButtonText:'✅ Approve & Credit',
+    cancelButtonText:'Cancel',
+    confirmButtonColor:'#00C48C'
+  });
+  
+  if(!res.isConfirmed)return;
+  
+  Swal.fire({title:'Processing...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  
+  try{
+    const userRef=db.collection('users').doc(activeDeposit.userId);
+    await db.runTransaction(async tx=>{
+      const uSnap=await tx.get(userRef);
+      if(!uSnap.exists)throw new Error('User not found');
+      tx.update(userRef,{
+        balance:firebase.firestore.FieldValue.increment(activeDeposit.amount),
+        totalDeposits:firebase.firestore.FieldValue.increment(activeDeposit.amount)
+      });
+      tx.update(db.collection('deposits').doc(activeDeposit.id),{
+        status:'approved',
+        approvedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    
+    Swal.fire({icon:'success',title:'Approved!',text:`₦${fmtN(activeDeposit.amount)} credited to user.`,timer:2500,showConfirmButton:false});
+    closeModal();
+    loadDeposits();
+  }catch(e){
+    console.error('Approve error:',e);
+    Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'});
+  }
+}
+
+async function modalReject(){
+  if(!activeDeposit)return;
+  
+  const {value:reason,isConfirmed}=await Swal.fire({
+    title:'Reject Deposit?',
+    input:'textarea',
+    inputPlaceholder:'Enter rejection reason (optional)',
+    showCancelButton:true,
+    confirmButtonText:'❌ Reject',
+    cancelButtonText:'Cancel',
+    confirmButtonColor:'#FF4D6D'
+  });
+  
+  if(!isConfirmed)return;
+  
+  Swal.fire({title:'Processing...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  
+  try{
+    await db.collection('deposits').doc(activeDeposit.id).update({
+      status:'rejected',
+      adminNote:reason||'',
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    Swal.fire({icon:'success',title:'Rejected',timer:2000,showConfirmButton:false});
+    closeModal();
+    loadDeposits();
+  }catch(e){
+    console.error('Reject error:',e);
+    Swal.fire({icon:'error',title:'Failed',text:e.message,confirmButtonColor:'#0052FF'});
+  }
+}
+</script>
+</body>
+</html>
