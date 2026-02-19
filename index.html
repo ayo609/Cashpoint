@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint - Smart Investment Platform | Earn Daily Returns</title>
+<meta name="description" content="Start earning daily returns with Cashpoint. Secure investment platform with transparent returns, instant withdrawals, and 24/7 support."/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root {
+  --primary: #0052FF;
+  --primary-dark: #0038B8;
+  --accent: #00D4A0;
+  --accent-dark: #00A87E;
+  --danger: #FF4D6D;
+  --warning: #FFB800;
+  --success: #00C48C;
+  --text: #0D1B3E;
+  --muted: #6B7A99;
+  --border: #D8E0F0;
+  --bg: #FAFBFF;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.nav.scrolled {
+  box-shadow: 0 4px 20px rgba(0, 82, 255, 0.08);
+}
+.nav-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+}
+.nav-logo-icon {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0, 82, 255, 0.25);
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-link {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav-link:hover {
+  background: var(--bg);
+  color: var(--primary);
+}
+.nav-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-login {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+.btn-login:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-signup {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: 0 4px 14px rgba(0, 82, 255, 0.3);
+}
+.btn-signup:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 82, 255, 0.4);
+}
+
+/* Mobile menu */
+.mobile-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text);
+}
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 73px;
+  left: 0;
+  right: 0;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideDown 0.3s ease;
+}
+.mobile-menu.active { display: flex; }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO SECTION
+   ═══════════════════════════════════════════════════════════ */
+.hero {
+  padding: 140px 24px 80px;
+  background: linear-gradient(180deg, #F0F4FF 0%, #FAFBFF 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(0, 82, 255, 0.08), transparent);
+  top: -200px;
+  right: -200px;
+  border-radius: 50%;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(0, 212, 160, 0.06), transparent);
+  bottom: -100px;
+  left: -100px;
+  border-radius: 50%;
+}
+.hero-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.hero-content {
+  animation: fadeInUp 0.8s ease;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 82, 255, 0.1);
+}
+.hero-badge i {
+  color: var(--success);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.hero-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-desc {
+  font-size: 20px;
+  color: var(--muted);
+  margin-bottom: 36px;
+  line-height: 1.7;
+}
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cta-btn {
+  padding: 16px 32px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+}
+.cta-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: 0 6px 20px rgba(0, 82, 255, 0.3);
+}
+.cta-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 82, 255, 0.4);
+}
+.cta-secondary {
+  background: white;
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+.cta-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.hero-visual {
+  position: relative;
+  animation: fadeIn 1s ease 0.3s both;
+}
+.hero-image {
+  width: 100%;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 82, 255, 0.2);
+  border: 1px solid var(--border);
+}
+.hero-stats {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  right: 30px;
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-around;
+  border: 1px solid var(--border);
+}
+.stat {
+  text-align: center;
+}
+.stat-val {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+  display: block;
+}
+.stat-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TRUST BADGES
+   ═══════════════════════════════════════════════════════════ */
+.trust {
+  padding: 40px 24px;
+  background: white;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.trust-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+}
+.trust-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 24px;
+}
+.trust-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.trust-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--bg);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HOW IT WORKS
+   ═══════════════════════════════════════════════════════════ */
+.how {
+  padding: 100px 24px;
+  background: var(--bg);
+}
+.how-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+.section-desc {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 600px;
+  margin: 0 auto;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+.step {
+  background: white;
+  border-radius: 20px;
+  padding: 32px 24px;
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+  position: relative;
+}
+.step:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 82, 255, 0.12);
+}
+.step-number {
+  position: absolute;
+  top: -16px;
+  left: 24px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgba(0, 82, 255, 0.3);
+}
+.step-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--bg);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 20px;
+  margin-top: 12px;
+}
+.step-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.step-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FEATURES
+   ═══════════════════════════════════════════════════════════ */
+.features {
+  padding: 100px 24px;
+  background: white;
+}
+.features-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.feature {
+  padding: 32px;
+  background: var(--bg);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.feature:hover {
+  background: white;
+  box-shadow: 0 12px 40px rgba(0, 82, 255, 0.08);
+  border-color: transparent;
+}
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  background: white;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.feature-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.feature-desc {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TESTIMONIALS
+   ═══════════════════════════════════════════════════════════ */
+.testimonials {
+  padding: 100px 24px;
+  background: linear-gradient(180deg, #F0F4FF 0%, white 100%);
+}
+.testimonials-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.testimonial {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 82, 255, 0.06);
+}
+.testimonial-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.testimonial-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.testimonial-author {
+  flex: 1;
+}
+.testimonial-name {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.testimonial-role {
+  font-size: 13px;
+  color: var(--muted);
+}
+.testimonial-stars {
+  color: var(--warning);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.testimonial-text {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CTA SECTION
+   ═══════════════════════════════════════════════════════════ */
+.cta-section {
+  padding: 100px 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
+  top: -200px;
+  right: -100px;
+  border-radius: 50%;
+}
+.cta-container {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.cta-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 46px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+.cta-text {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 36px;
+  line-height: 1.6;
+}
+.cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.cta-btn-white {
+  padding: 16px 32px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+.cta-btn-white:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════ */
+.footer {
+  padding: 60px 24px 32px;
+  background: var(--text);
+  color: white;
+}
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+}
+.footer-brand-icon {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.footer-desc {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.footer-social {
+  display: flex;
+  gap: 12px;
+}
+.social-link {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.social-link:hover {
+  background: var(--primary);
+  transform: translateY(-2px);
+}
+.footer-col h4 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.footer-link {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+.footer-link:hover {
+  color: white;
+}
+.footer-bottom {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .hero-title {
+    font-size: 44px;
+  }
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-top {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+  .mobile-toggle {
+    display: flex;
+  }
+  .hero {
+    padding: 120px 20px 60px;
+  }
+  .hero-title {
+    font-size: 36px;
+  }
+  .hero-desc {
+    font-size: 17px;
+  }
+  .hero-cta {
+    flex-direction: column;
+  }
+  .cta-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .hero-stats {
+    position: static;
+    margin-top: 24px;
+  }
+  .section-title {
+    font-size: 32px;
+  }
+  .steps {
+    grid-template-columns: 1fr;
+  }
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  .cta-title {
+    font-size: 32px;
+  }
+  .cta-text {
+    font-size: 17px;
+  }
+  .footer-top {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 0 16px;
+  }
+  .nav-logo {
+    font-size: 20px;
+  }
+  .hero-title {
+    font-size: 28px;
+  }
+  .section-title {
+    font-size: 26px;
+  }
+  .trust-grid {
+    gap: 24px;
+  }
+  .trust-item {
+    font-size: 13px;
+  }
+  .stat-val {
+    font-size: 20px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="nav" id="nav">
+  <div class="nav-container">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">💰</div>
+      Cashpoint
+    </a>
+    <div class="nav-links">
+      <a href="#how" class="nav-link">How It Works</a>
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#testimonials" class="nav-link">Testimonials</a>
+      <a href="login.html" class="nav-btn btn-login">Login</a>
+      <a href="signup.html" class="nav-btn btn-signup">Get Started</a>
+    </div>
+    <button class="mobile-toggle" onclick="toggleMenu()">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#how" class="nav-link" onclick="toggleMenu()">How It Works</a>
+    <a href="#features" class="nav-link" onclick="toggleMenu()">Features</a>
+    <a href="#testimonials" class="nav-link" onclick="toggleMenu()">Testimonials</a>
+    <a href="login.html" class="nav-btn btn-login">Login</a>
+    <a href="signup.html" class="nav-btn btn-signup">Get Started</a>
+  </div>
+</nav>
+
+<!-- HERO SECTION -->
+<section class="hero">
+  <div class="hero-container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fas fa-shield-alt"></i>
+        Secure & Trusted Platform
+      </div>
+      <h1 class="hero-title">
+        Start Earning Daily Returns on Your Investments
+      </h1>
+      <p class="hero-desc">
+        Join thousands of investors growing their wealth with Cashpoint. Transparent returns, instant withdrawals, and 24/7 support.
+      </p>
+      <div class="hero-cta">
+        <a href="signup.html" class="cta-btn cta-primary">
+          Get Started Now
+          <i class="fas fa-arrow-right"></i>
+        </a>
+        <a href="#how" class="cta-btn cta-secondary">
+          <i class="fas fa-play-circle"></i>
+          See How It Works
+        </a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&h=600&fit=crop" 
+           alt="Investment Dashboard" 
+           class="hero-image"/>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-val">10K+</span>
+          <span class="stat-lbl">Active Users</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val">₦2.5B+</span>
+          <span class="stat-lbl">Total Invested</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val">99.8%</span>
+          <span class="stat-lbl">Success Rate</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BADGES -->
+<section class="trust">
+  <div class="trust-container">
+    <div class="trust-label">Trusted By Investors Nationwide</div>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fas fa-shield-check"></i></div>
+        SSL Encrypted
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fas fa-lock"></i></div>
+        Bank-Level Security
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fas fa-headset"></i></div>
+        24/7 Support
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fas fa-bolt"></i></div>
+        Instant Payouts
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="how-container">
+    <div class="section-header">
+      <div class="section-badge">
+        <i class="fas fa-lightbulb"></i>
+        Simple Process
+      </div>
+      <h2 class="section-title">How Cashpoint Works</h2>
+      <p class="section-desc">
+        Get started in minutes and watch your investments grow with transparent, daily returns.
+      </p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-icon">📝</div>
+        <h3 class="step-title">Create Account</h3>
+        <p class="step-desc">
+          Sign up in 2 minutes with your email. No lengthy verification process required.
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-icon">💳</div>
+        <h3 class="step-title">Fund Wallet</h3>
+        <p class="step-desc">
+          Deposit funds via bank transfer. Your balance is credited within 5-30 minutes.
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-icon">📈</div>
+        <h3 class="step-title">Choose Plan</h3>
+        <p class="step-desc">
+          Select an investment plan that matches your goals. Plans start from ₦3,000.
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-icon">💰</div>
+        <h3 class="step-title">Earn Daily</h3>
+        <p class="step-desc">
+          Watch your earnings grow daily. Withdraw anytime with instant processing.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="features-container">
+    <div class="section-header">
+      <div class="section-badge">
+        <i class="fas fa-star"></i>
+        Why Choose Us
+      </div>
+      <h2 class="section-title">Built for Serious Investors</h2>
+      <p class="section-desc">
+        Everything you need to grow your wealth, all in one secure platform.
+      </p>
+    </div>
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <h3 class="feature-title">Bank-Level Security</h3>
+        <p class="feature-desc">
+          Your funds are protected with military-grade encryption and secure servers.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Instant Withdrawals</h3>
+        <p class="feature-desc">
+          Access your earnings anytime. Withdrawals processed instantly to your bank account.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <h3 class="feature-title">Transparent Returns</h3>
+        <p class="feature-desc">
+          See exactly how much you're earning every single day. No hidden fees or surprises.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🎯</div>
+        <h3 class="feature-title">Multiple Plans</h3>
+        <p class="feature-desc">
+          Choose from various investment plans ranging from ₦3,000 to ₦1,000,000+.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">👥</div>
+        <h3 class="feature-title">Referral Rewards</h3>
+        <p class="feature-desc">
+          Earn 25% commission on direct referrals plus 2% on Level 2 and 1% on Level 3.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📱</div>
+        <h3 class="feature-title">Mobile Optimized</h3>
+        <p class="feature-desc">
+          Manage investments on-the-go. Fully responsive platform works on all devices.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials" id="testimonials">
+  <div class="testimonials-container">
+    <div class="section-header">
+      <div class="section-badge">
+        <i class="fas fa-users"></i>
+        Success Stories
+      </div>
+      <h2 class="section-title">What Our Investors Say</h2>
+      <p class="section-desc">
+        Join thousands of satisfied investors earning daily returns with Cashpoint.
+      </p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial">
+        <div class="testimonial-header">
+          <img src="https://i.pravatar.cc/150?img=12" alt="Chioma Okafor" class="testimonial-avatar"/>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Chioma Okafor</div>
+            <div class="testimonial-role">Entrepreneur, Lagos</div>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <p class="testimonial-text">
+          "I've been investing with Cashpoint for 6 months now. The daily returns are consistent and withdrawals are always instant. Best investment decision I've made!"
+        </p>
+      </div>
+      <div class="testimonial">
+        <div class="testimonial-header">
+          <img src="https://i.pravatar.cc/150?img=33" alt="Ibrahim Adamu" class="testimonial-avatar"/>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Ibrahim Adamu</div>
+            <div class="testimonial-role">Business Owner, Abuja</div>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <p class="testimonial-text">
+          "The referral system is amazing! I've earned over ₦200,000 just from referring my network. The platform is transparent and trustworthy."
+        </p>
+      </div>
+      <div class="testimonial">
+        <div class="testimonial-header">
+          <img src="https://i.pravatar.cc/150?img=47" alt="Blessing Nwosu" class="testimonial-avatar"/>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Blessing Nwosu</div>
+            <div class="testimonial-role">Teacher, Port Harcourt</div>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <p class="testimonial-text">
+          "Customer support is exceptional. Any time I have questions, they respond immediately. The platform is also very easy to navigate."
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="cta-section">
+  <div class="cta-container">
+    <h2 class="cta-title">Ready to Start Growing Your Wealth?</h2>
+    <p class="cta-text">
+      Join over 10,000 investors earning daily returns. Get started in minutes with as little as ₦3,000.
+    </p>
+    <div class="cta-buttons">
+      <a href="signup.html" class="cta-btn-white">
+        Create Free Account
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-top">
+      <div class="footer-about">
+        <div class="footer-brand">
+          <div class="footer-brand-icon">💰</div>
+          Cashpoint
+        </div>
+        <p class="footer-desc">
+          Nigeria's leading investment platform. Secure, transparent, and built for growth. Start earning daily returns today.
+        </p>
+        <div class="footer-social">
+          <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-whatsapp"></i></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <div class="footer-links">
+          <a href="signup.html" class="footer-link">Create Account</a>
+          <a href="login.html" class="footer-link">Login</a>
+          <a href="#how" class="footer-link">How It Works</a>
+          <a href="#features" class="footer-link">Features</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Help Center</a>
+          <a href="#" class="footer-link">Contact Us</a>
+          <a href="#" class="footer-link">FAQs</a>
+          <a href="https://wa.me/2347018051146" class="footer-link">WhatsApp Support</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Terms of Service</a>
+          <a href="#" class="footer-link">Privacy Policy</a>
+          <a href="#" class="footer-link">Risk Disclosure</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 Cashpoint. All rights reserved. Invest responsibly.
+    </div>
+  </div>
+</footer>
+
+<script>
+// Navbar scroll effect
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('nav');
+  if (window.scrollY > 50) {
+    nav.classList.add('scrolled');
+  } else {
+    nav.classList.remove('scrolled');
+  }
+});
+
+// Mobile menu toggle
+function toggleMenu() {
+  const menu = document.getElementById('mobileMenu');
+  menu.classList.toggle('active');
+}
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>
