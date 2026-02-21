@@ -11,7 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
 <!-- SweetAlert2 -->
-<script src="cashpoint-modal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
@@ -793,7 +793,7 @@ function onAmountInput(val) {
   }
 }
 
-const WITHDRAWAL_FEE_PCT = 10; /* 10% withdrawal charge */
+const WITHDRAWAL_FEE_PCT = 15; /* 15% withdrawal processing fee */
 
 function updatePreview(amount) {
   const preview   = document.getElementById('amtPreview');
