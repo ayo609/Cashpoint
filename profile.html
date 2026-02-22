@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Profile</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary:      #0052FF;
+    --primary-dark: #0039b3;
+    --accent:       #00D4A0;
+    --accent-dark:  #00a87e;
+    --warning:      #FFB800;
+    --danger:       #FF4D6D;
+    --success:      #00C48C;
+    --bg:           #F0F4FF;
+    --text:         #0D1B3E;
+    --muted:        #6B7A99;
+    --border:       #D8E0F0;
+    --bottom-h:     72px;
+    --nav-h:        70px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:var(--bg); color:var(--text);
+    padding-bottom:calc(var(--bottom-h)+20px);
+    min-height:100vh; overflow-x:hidden;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position:sticky; top:0; z-index:900; height:var(--nav-h);
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; padding:0 20px;
+  }
+  .topbar-left { display:flex; align-items:center; gap:10px; }
+  .topbar-logo { width:38px;height:38px;background:var(--primary);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px; }
+  .topbar-brand { font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--text); }
+  .topbar-right { display:flex;align-items:center;gap:10px; }
+  .topbar-clock { font-size:12.5px;color:var(--muted);font-weight:600;display:none; }
+  @media(min-width:520px){ .topbar-clock{display:block;} }
+  .signout-btn {
+    display:flex;align-items:center;gap:6px;
+    background:#FFF0F3;color:var(--danger);border:none;
+    border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;
+    font-family:inherit;cursor:pointer;transition:background 0.2s;
+  }
+  .signout-btn:hover { background:#ffe0e6; }
+
+  /* ── HERO ── */
+  .hero {
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 55%,#001c6b 100%);
+    padding:28px 22px 100px; position:relative; overflow:hidden;
+  }
+  .hero::before { content:'';position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,0.05);top:-100px;right:-80px; }
+  .hero::after  { content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(0,212,160,0.1);bottom:-60px;left:-40px; }
+  .hero-tag { font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;position:relative;z-index:1; }
+  .hero-title { font-family:'Sora',sans-serif;font-size:clamp(22px,5.5vw,30px);font-weight:700;color:#fff;margin-bottom:6px;position:relative;z-index:1; }
+  .hero-sub { font-size:13px;color:rgba(255,255,255,0.65);font-weight:500;position:relative;z-index:1; }
+
+  /* ── PROFILE AVATAR CARD ── */
+  .avatar-outer { padding:0 16px;margin-top:-62px;position:relative;z-index:10; }
+  .avatar-card {
+    background:white;border-radius:24px;
+    box-shadow:0 14px 44px rgba(0,82,255,0.14);
+    padding:24px 22px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    animation:riseUp .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes riseUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+  .big-avatar {
+    width:68px;height:68px;border-radius:20px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--primary),var(--accent));
+    display:flex;align-items:center;justify-content:center;
+    color:white;font-weight:800;font-size:28px;
+    box-shadow:0 6px 20px rgba(0,82,255,0.3);
+  }
+  .avatar-info { flex:1; }
+  .av-name { font-family:'Sora',sans-serif;font-size:19px;font-weight:700;color:var(--text);margin-bottom:3px; }
+  .av-email { font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:6px; }
+  .av-chips { display:flex;gap:6px;flex-wrap:wrap; }
+  .av-chip {
+    display:inline-flex;align-items:center;gap:4px;
+    padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;
+  }
+  .chip-green { background:#E8FFF6;color:var(--success); }
+  .chip-blue  { background:#E8F0FF;color:var(--primary); }
+
+  /* ── SECTION ── */
+  .section { padding:22px 16px 0; }
+  .section-title { font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px; }
+
+  /* ── INFO CARD (read-only locked fields) ── */
+  .info-card {
+    background:white;border-radius:20px;padding:20px;
+    box-shadow:0 4px 18px rgba(0,82,255,0.08);
+    display:flex;flex-direction:column;gap:10px;
+    animation:riseUp .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .info-row {
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--bg);border-radius:11px;padding:11px 14px;gap:10px;
+  }
+  .ir-left { display:flex;align-items:center;gap:10px; }
+  .ir-icon { width:34px;height:34px;border-radius:10px;background:white;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0; }
+  .ir-lbl { font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px; }
+  .ir-val { font-size:14px;font-weight:700;color:var(--text); }
+  .locked-badge { display:inline-flex;align-items:center;gap:4px;background:#F0F4FF;color:var(--muted);border-radius:99px;padding:3px 10px;font-size:10.5px;font-weight:700; }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background:white;border-radius:20px;overflow:hidden;
+    box-shadow:0 4px 18px rgba(0,82,255,0.08);
+    animation:riseUp .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .fc-head { background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:14px 20px;display:flex;align-items:center;gap:10px; }
+  .fc-icon { font-size:20px; }
+  .fc-title { font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:white; }
+  .fc-sub   { font-size:11.5px;color:rgba(255,255,255,0.75);font-weight:500; }
+  .fc-body  { padding:18px;display:flex;flex-direction:column;gap:14px; }
+
+  .fg-label { font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;display:flex;align-items:center;gap:6px; }
+  .fg-label i { font-size:12px;color:var(--primary); }
+  .fg-input {
+    width:100%;padding:12px 16px;font-size:15px;font-weight:600;
+    font-family:inherit;border:2px solid var(--border);border-radius:12px;
+    outline:none;color:var(--text);transition:border-color .2s;
+  }
+  .fg-input:focus { border-color:var(--primary); }
+  .fg-input::placeholder { color:var(--border);font-weight:400; }
+  .pw-row { position:relative; }
+  .pw-row .fg-input { padding-right:46px; }
+  .pw-toggle {
+    position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;
+  }
+  .save-btn {
+    width:100%;padding:13px;border:none;border-radius:13px;
+    font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
+    color:white;background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    box-shadow:0 6px 20px rgba(0,82,255,0.28);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .save-btn:hover { transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,82,255,0.36); }
+  .save-btn:disabled { opacity:.6;cursor:not-allowed;transform:none!important; }
+  .pw-btn { background:linear-gradient(135deg,var(--danger),#c0392b);box-shadow:0 6px 20px rgba(255,77,109,0.28); }
+  .pw-btn:hover { box-shadow:0 10px 28px rgba(255,77,109,0.38); }
+  .pw-strength { height:5px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:6px; }
+  .pw-strength-fill { height:100%;border-radius:99px;width:0%;transition:width .3s,background .3s; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display:grid;grid-template-columns:repeat(3,1fr);gap:10px; }
+  .stat-mini {
+    background:white;border-radius:16px;padding:14px 12px;text-align:center;
+    box-shadow:0 4px 14px rgba(0,82,255,0.07);
+  }
+  .sm-val { font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px; }
+  .sm-lbl { font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em; }
+
+  /* ── DANGER ZONE ── */
+  .danger-card {
+    background:white;border-radius:20px;padding:20px;
+    box-shadow:0 4px 18px rgba(255,77,109,0.1);
+    border:1.5px solid #ffe0e6;
+  }
+  .danger-row { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+  .danger-info .dt { font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px; }
+  .danger-info .ds { font-size:12px;color:var(--muted); }
+  .danger-action-btn {
+    padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:700;
+    font-family:inherit;cursor:pointer;
+    background:#FFF0F3;color:var(--danger);transition:background .2s;flex-shrink:0;
+  }
+  .danger-action-btn:hover { background:#ffe0e6; }
+
+    /* ══════════════════════════
+     SUPPORT CHAT
+  ══════════════════════════ */
+  .chat-card {
+    background:white;border-radius:20px;overflow:hidden;
+    box-shadow:0 4px 18px rgba(0,82,255,0.1);
+    animation:riseUp .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .chat-head {
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+    padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .chat-head-left { display:flex;align-items:center;gap:10px; }
+  .chat-av { width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px; }
+  .chat-name { font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:white; }
+  .chat-status { font-size:11.5px;color:rgba(255,255,255,0.8);display:flex;align-items:center;gap:5px; }
+  .online-dot { width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
+
+  .chat-body {
+    height:380px;overflow-y:auto;padding:16px;
+    display:flex;flex-direction:column;gap:10px;
+    background:#F8FAFF;
+  }
+  .chat-body::-webkit-scrollbar { width:4px; }
+  .chat-body::-webkit-scrollbar-thumb { background:var(--border);border-radius:99px; }
+
+  /* Date separator */
+  .chat-date-sep {
+    display:flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:700;color:var(--muted);
+    margin:4px 0;
+  }
+  .chat-date-sep::before,.chat-date-sep::after {
+    content:'';flex:1;height:1px;background:var(--border);
+  }
+
+  /* Message row */
+  .msg-wrap { display:flex;gap:8px;align-items:flex-end; }
+  .msg-wrap.user { flex-direction:row-reverse; }
+
+  /* Avatar */
+  .msg-mini-av {
+    width:30px;height:30px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;
+  }
+  .msg-mini-av.admin { background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:white; }
+  .msg-mini-av.user  { background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:white; }
+
+  /* Bubble container */
+  .msg-inner { display:flex;flex-direction:column;max-width:76%; }
+  .msg-wrap.user .msg-inner { align-items:flex-end; }
+
+  /* Sender label above bubble */
+  .msg-sender { font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:3px;padding:0 2px; }
+
+  .msg-bubble {
+    padding:10px 14px;border-radius:16px;
+    font-size:13.5px;font-weight:500;line-height:1.55;
+    word-break:break-word;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  }
+  .msg-bubble.admin {
+    background:white;color:var(--text);
+    border-bottom-left-radius:4px;
+    border:1.5px solid var(--border);
+  }
+  .msg-bubble.user {
+    background:var(--primary);color:white;
+    border-bottom-right-radius:4px;
+  }
+  .msg-time { font-size:10.5px;color:var(--muted);font-weight:600;margin-top:4px;padding:0 2px; }
+  .msg-wrap.user .msg-time { text-align:right; }
+
+  /* Typing indicator */
+  .typing-wrap { display:flex;gap:8px;align-items:flex-end; }
+  .typing-bubble {
+    background:white;border:1.5px solid var(--border);
+    border-radius:16px;border-bottom-left-radius:4px;
+    padding:10px 14px;display:flex;gap:4px;align-items:center;
+  }
+  .typing-dot {
+    width:7px;height:7px;background:var(--muted);border-radius:50%;
+    animation:typingPulse 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay:.2s; }
+  .typing-dot:nth-child(3) { animation-delay:.4s; }
+  @keyframes typingPulse { 0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1} }
+
+  /* Chat input */
+  .chat-footer { padding:12px;border-top:1px solid var(--border);background:white; }
+  .chat-input-row { display:flex;gap:8px;align-items:flex-end; }
+  .chat-textarea {
+    flex:1;padding:10px 14px;font-size:14px;font-family:inherit;
+    border:2px solid var(--border);border-radius:12px;outline:none;
+    resize:none;max-height:100px;line-height:1.5;
+    transition:border-color .2s;
+  }
+  .chat-textarea:focus { border-color:var(--accent); }
+  .send-btn {
+    width:42px;height:42px;border-radius:12px;border:none;
+    background:var(--accent);color:white;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;transition:transform .15s,opacity .2s;
+  }
+  .send-btn:hover { transform:scale(1.08); }
+  .send-btn:disabled { opacity:.5;cursor:not-allowed;transform:none!important; }
+  .chat-note { font-size:11px;color:var(--muted);font-weight:600;text-align:center;margin-top:8px; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position:fixed;bottom:0;left:0;width:100%;height:var(--bottom-h);
+    background:white;border-top:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-around;
+    padding:0 8px;z-index:999;box-shadow:0 -4px 24px rgba(0,82,255,0.09);
+  }
+  .nav-item {
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    text-decoration:none;padding:8px 12px;border-radius:14px;
+    flex:1;max-width:74px;transition:background .2s;cursor:pointer;
+  }
+  .nav-item:hover { background:var(--bg); }
+  .nav-item i { font-size:20px;color:var(--muted);transition:color .2s,transform .2s; }
+  .nav-item span { font-size:10.5px;font-weight:700;color:var(--muted); }
+  .nav-item.active i,.nav-item.active span { color:var(--primary); }
+  .nav-item.active i { transform:translateY(-2px); }
+  .nav-center {
+    width:52px;height:52px;border-radius:16px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 22px rgba(0,82,255,0.38);
+    text-decoration:none;transition:transform .2s;margin-bottom:10px;flex-shrink:0;
+  }
+  .nav-center:hover { transform:translateY(-3px); }
+  .nav-center i { color:white;font-size:21px; }
+
+  .page-bottom { height:16px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">💰</div>
+    <span class="topbar-brand">My Profile</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-clock" id="topClock">--:--</span>
+    <button class="signout-btn" onclick="signOut()">
+      <i class="fas fa-sign-out-alt"></i> Sign Out
+    </button>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">Account Settings</div>
+  <div class="hero-title">My Profile 👤</div>
+  <div class="hero-sub">Manage your account and contact support</div>
+</div>
+
+<!-- AVATAR CARD -->
+<div class="avatar-outer">
+  <div class="avatar-card">
+    <div class="big-avatar" id="bigAvatar">?</div>
+    <div class="avatar-info">
+      <div class="av-name" id="avName">Loading...</div>
+      <div class="av-email" id="avEmail">—</div>
+      <div class="av-chips">
+        <span class="av-chip chip-green"><i class="fas fa-circle" style="font-size:7px;"></i> Active</span>
+        <span class="av-chip chip-blue" id="avRefCode">Ref: —</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="section">
+  <div class="section-title">Account Overview</div>
+  <div class="stats-row">
+    <div class="stat-mini">
+      <div class="sm-val" id="stBalance">₦0</div>
+      <div class="sm-lbl">Balance</div>
+    </div>
+    <div class="stat-mini">
+      <div class="sm-val" id="stEarnings">₦0</div>
+      <div class="sm-lbl">Earned</div>
+    </div>
+    <div class="stat-mini">
+      <div class="sm-val" id="stRefs">0</div>
+      <div class="sm-lbl">Referrals</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOCKED FIELDS INFO -->
+<div class="section">
+  <div class="section-title">Account Details</div>
+  <div class="info-card">
+    <div class="info-row">
+      <div class="ir-left">
+        <div class="ir-icon">👤</div>
+        <div>
+          <div class="ir-lbl">Username</div>
+          <div class="ir-val" id="infoUsername">—</div>
+        </div>
+      </div>
+      <span class="locked-badge"><i class="fas fa-lock" style="font-size:9px;"></i> Locked</span>
+    </div>
+    <div class="info-row">
+      <div class="ir-left">
+        <div class="ir-icon">✉️</div>
+        <div>
+          <div class="ir-lbl">Email Address</div>
+          <div class="ir-val" id="infoEmail">—</div>
+        </div>
+      </div>
+      <span class="locked-badge"><i class="fas fa-lock" style="font-size:9px;"></i> Locked</span>
+    </div>
+    <div class="info-row">
+      <div class="ir-left">
+        <div class="ir-icon">📅</div>
+        <div>
+          <div class="ir-lbl">Member Since</div>
+          <div class="ir-val" id="infoJoined">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="ir-left">
+        <div class="ir-icon">🔗</div>
+        <div>
+          <div class="ir-lbl">Referral Code</div>
+          <div class="ir-val" id="infoRefCode">—</div>
+        </div>
+      </div>
+      <button style="background:var(--primary);color:white;border:none;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;" onclick="copyRefCode()">Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROFILE -->
+<div class="section">
+  <div class="section-title">Edit Profile</div>
+  <div class="form-card">
+    <div class="fc-head">
+      <div class="fc-icon">✏️</div>
+      <div>
+        <div class="fc-title">Update Your Info</div>
+        <div class="fc-sub">Username and email cannot be changed</div>
+      </div>
+    </div>
+    <div class="fc-body">
+      <div>
+        <div class="fg-label"><i class="fas fa-id-card"></i> Full Name</div>
+        <input class="fg-input" id="editFullName" type="text" placeholder="Enter your full name"/>
+      </div>
+      <div>
+        <div class="fg-label"><i class="fas fa-phone"></i> Phone Number</div>
+        <input class="fg-input" id="editPhone" type="tel" placeholder="e.g. 08012345678"/>
+      </div>
+      <button class="save-btn" id="saveProfileBtn" onclick="saveProfile()">
+        <i class="fas fa-save"></i> Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD -->
+<div class="section">
+  <div class="section-title">Security</div>
+  <div class="form-card">
+    <div class="fc-head" style="background:linear-gradient(135deg,#FF4D6D,#c0392b);">
+      <div class="fc-icon">🔐</div>
+      <div>
+        <div class="fc-title">Change Password</div>
+        <div class="fc-sub">Use a strong password with 8+ characters</div>
+      </div>
+    </div>
+    <div class="fc-body">
+      <div>
+        <div class="fg-label"><i class="fas fa-lock"></i> Current Password</div>
+        <div class="pw-row">
+          <input class="fg-input" id="currentPw" type="password" placeholder="Enter current password"/>
+          <button class="pw-toggle" onclick="togglePw('currentPw',this)" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      <div>
+        <div class="fg-label"><i class="fas fa-key"></i> New Password</div>
+        <div class="pw-row">
+          <input class="fg-input" id="newPw" type="password" placeholder="Min 8 characters" oninput="checkStrength(this.value)"/>
+          <button class="pw-toggle" onclick="togglePw('newPw',this)" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="pw-strength"><div class="pw-strength-fill" id="pwStrengthBar"></div></div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px;" id="pwStrengthLabel"></div>
+      </div>
+      <div>
+        <div class="fg-label"><i class="fas fa-lock"></i> Confirm New Password</div>
+        <div class="pw-row">
+          <input class="fg-input" id="confirmPw" type="password" placeholder="Repeat new password"/>
+          <button class="pw-toggle" onclick="togglePw('confirmPw',this)" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      <button class="save-btn pw-btn" id="changePwBtn" onclick="changePassword()">
+        <i class="fas fa-shield-alt"></i> Update Password
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER SUPPORT CHAT -->
+<div class="section">
+  <div class="section-title">💬 Customer Support</div>
+  <div class="chat-card">
+    <div class="chat-head">
+      <div class="chat-head-left">
+        <div class="chat-av">🎧</div>
+        <div>
+          <div class="chat-name">Cashpoint Support</div>
+          <div class="chat-status"><div class="online-dot"></div> Online — typically replies in minutes</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <!-- Messages rendered here -->
+    </div>
+    <div class="chat-footer">
+      <div class="chat-input-row">
+        <textarea
+          class="chat-textarea"
+          id="chatInput"
+          placeholder="Type your message..."
+          rows="1"
+          onkeydown="handleChatKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="chat-note">Messages are reviewed by our support team. Response time: a few minutes to 1 hour.</div>
+    </div>
+  </div>
+</div>
+
+<!-- DANGER ZONE -->
+<div class="section">
+  <div class="section-title">Danger Zone</div>
+  <div class="danger-card">
+    <div class="danger-row">
+      <div class="danger-info">
+        <div class="dt">Sign Out of All Devices</div>
+        <div class="ds">This will revoke all active sessions</div>
+      </div>
+      <button class="danger-action-btn" onclick="signOut()">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="page-bottom"></div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <a href="home.html" class="nav-item">
+    <i class="fas fa-home"></i><span>Home</span>
+  </a>
+  <a href="plans.html" class="nav-item">
+    <i class="fas fa-chart-line"></i><span>Plans</span>
+  </a>
+  <a href="investments.html" class="nav-center">
+    <i class="fas fa-wallet"></i>
+  </a>
+  <a href="referrals.html" class="nav-item">
+    <i class="fas fa-users"></i><span>Referrals</span>
+  </a>
+  <a href="dashboard.html" class="nav-item active">
+    <i class="fas fa-user-circle"></i><span>Profile</span>
+  </a>
+</div>
+
+<script>
+/* ── Firebase ── */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+  authDomain:        "cashpoint-ac4f4.firebaseapp.com",
+  projectId:         "cashpoint-ac4f4",
+  storageBucket:     "cashpoint-ac4f4.firebasestorage.app",
+  messagingSenderId: "16133206416",
+  appId:             "1:16133206416:web:a093f4e153ad2c9bcc8315"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ── State ── */
+let currentUser = null;
+let userData    = {};
+let chatListener = null;
+
+/* ── Clock ── */
+function tickClock() {
+  document.getElementById('topClock').textContent =
+    new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+tickClock(); setInterval(tickClock, 1000);
+
+/* ── Formatters ── */
+function fmtShort(n) {
+  const v = Number(n||0);
+  if (v >= 1_000_000) return '₦'+(v/1_000_000).toFixed(2)+'M';
+  if (v >= 1_000)     return '₦'+(v/1_000).toFixed(1)+'K';
+  return '₦'+v.toLocaleString('en-NG');
+}
+
+/* ── Auth ── */
+auth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  currentUser = user;
+  await loadProfile();
+  listenToChat();
+});
+
+/* ══════════════════════════════════
+   LOAD PROFILE
+══════════════════════════════════ */
+async function loadProfile() {
+  const snap = await db.collection('users').doc(currentUser.uid).get();
+  if (!snap.exists) return;
+  userData = snap.data();
+
+  const fn    = userData.fullName || userData.username || 'User';
+  const init  = fn.charAt(0).toUpperCase();
+  const email = userData.email || currentUser.email || '—';
+  const ref   = userData.referralCode || '—';
+  const joined = userData.createdAt
+    ? userData.createdAt.toDate().toLocaleDateString('en-NG', { day:'2-digit', month:'short', year:'numeric' })
+    : '—';
+
+  document.getElementById('bigAvatar').textContent     = init;
+  document.getElementById('avName').textContent        = fn;
+  document.getElementById('avEmail').textContent       = email;
+  document.getElementById('avRefCode').textContent     = 'Ref: ' + ref;
+
+  document.getElementById('infoUsername').textContent  = userData.username || '—';
+  document.getElementById('infoEmail').textContent     = email;
+  document.getElementById('infoJoined').textContent    = joined;
+  document.getElementById('infoRefCode').textContent   = ref;
+
+  document.getElementById('stBalance').textContent     = fmtShort(userData.balance);
+  document.getElementById('stEarnings').textContent    = fmtShort(userData.totalEarnings);
+  document.getElementById('stRefs').textContent        = userData.referralCount || 0;
+
+  document.getElementById('editFullName').value = userData.fullName || '';
+  document.getElementById('editPhone').value    = userData.phone    || '';
+}
+
+/* ══════════════════════════════════
+   SAVE PROFILE (name + phone only)
+══════════════════════════════════ */
+async function saveProfile() {
+  const btn      = document.getElementById('saveProfileBtn');
+  const fullName = document.getElementById('editFullName').value.trim();
+  const phone    = document.getElementById('editPhone').value.trim();
+
+  if (!fullName) {
+    Swal.fire({ icon:'warning', title:'Name Required', text:'Please enter your full name.', confirmButtonColor:'#0052FF' });
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({
+      fullName,
+      phone,
+      profileUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('avName').textContent = fullName;
+    document.getElementById('bigAvatar').textContent = fullName.charAt(0).toUpperCase();
+
+    Swal.fire({ icon:'success', title:'Profile Updated!', timer:2000, showConfirmButton:false });
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'Update Failed', text:err.message, confirmButtonColor:'#0052FF' });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ══════════════════════════════════
+   CHANGE PASSWORD
+   Uses Firebase Auth reauthentication
+   so current password is verified first
+══════════════════════════════════ */
+async function changePassword() {
+  const btn       = document.getElementById('changePwBtn');
+  const currentPw = document.getElementById('currentPw').value;
+  const newPw     = document.getElementById('newPw').value;
+  const confirmPw = document.getElementById('confirmPw').value;
+
+  if (!currentPw || !newPw || !confirmPw) {
+    Swal.fire({ icon:'warning', title:'All Fields Required', text:'Please fill in all password fields.', confirmButtonColor:'#FF4D6D' });
+    return;
+  }
+  if (newPw.length < 8) {
+    Swal.fire({ icon:'warning', title:'Password Too Short', text:'New password must be at least 8 characters.', confirmButtonColor:'#FF4D6D' });
+    return;
+  }
+  if (newPw !== confirmPw) {
+    Swal.fire({ icon:'warning', title:'Passwords Don\'t Match', text:'New password and confirmation must match.', confirmButtonColor:'#FF4D6D' });
+    return;
+  }
+
+  btn.disabled = true;
+  Swal.fire({ title:'Verifying...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+
+  try {
+    /* Step 1: Re-authenticate with current password */
+    const credential = firebase.auth.EmailAuthProvider.credential(
+      currentUser.email,
+      currentPw
+    );
+    await currentUser.reauthenticateWithCredential(credential);
+
+    /* Step 2: Update the password */
+    await currentUser.updatePassword(newPw);
+
+    /* Step 3: Log to Firestore (no password stored — just timestamp) */
+    await db.collection('users').doc(currentUser.uid).update({
+      passwordChangedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    /* Clear fields */
+    document.getElementById('currentPw').value  = '';
+    document.getElementById('newPw').value      = '';
+    document.getElementById('confirmPw').value  = '';
+    document.getElementById('pwStrengthBar').style.width = '0%';
+    document.getElementById('pwStrengthLabel').textContent = '';
+
+    Swal.fire({
+      icon:'success', title:'Password Updated!',
+      text:'Your password has been changed successfully.',
+      confirmButtonColor:'#FF4D6D'
+    });
+
+  } catch(err) {
+    let msg = 'Failed to update password. Please try again.';
+    if (err.code === 'auth/wrong-password')   msg = 'Current password is incorrect.';
+    if (err.code === 'auth/too-many-requests') msg = 'Too many attempts. Please try again later.';
+    if (err.code === 'auth/requires-recent-login') msg = 'Please sign out and sign back in before changing your password.';
+    Swal.fire({ icon:'error', title:'Password Change Failed', text:msg, confirmButtonColor:'#FF4D6D' });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ── Password strength meter ── */
+function checkStrength(pw) {
+  const bar   = document.getElementById('pwStrengthBar');
+  const label = document.getElementById('pwStrengthLabel');
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const levels = [
+    { w:'20%',  bg:'#FF4D6D', label:'Very Weak' },
+    { w:'40%',  bg:'#FFB800', label:'Weak' },
+    { w:'60%',  bg:'#FFB800', label:'Fair' },
+    { w:'80%',  bg:'#00C48C', label:'Strong' },
+    { w:'100%', bg:'#0052FF', label:'Very Strong' }
+  ];
+  const lvl = levels[Math.max(0, score-1)] || levels[0];
+  bar.style.width      = pw.length ? lvl.w  : '0%';
+  bar.style.background = lvl.bg;
+  label.textContent    = pw.length ? lvl.label : '';
+  label.style.color    = lvl.bg;
+}
+
+/* ── Toggle password visibility ── */
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  btn.innerHTML = isText ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+}
+
+/* ── Copy referral code ── */
+function copyRefCode() {
+  const code = userData.referralCode || '';
+  const origin = window.location.origin;
+  const link = `${origin}/signup.html?ref=${code}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(() =>
+      Swal.fire({ icon:'success', title:'Referral Link Copied!', timer:1500, showConfirmButton:false })
+    );
+  }
+}
+
+/* ══════════════════════════════════
+   CUSTOMER SUPPORT CHAT
+   ─────────────────────────────────
+   Each message stored in support_messages:
+   { userId, userName, message, sender ('user'|'admin'),
+     threadId (== userId), createdAt, read }
+   Thread metadata in support_threads/{userId}:
+   { userId, userName, lastMessage, lastMessageAt,
+     unreadByAdmin, status }
+══════════════════════════════════ */
+
+/* ══════════════════════════════════
+   CHAT — Real-time listener
+   Shows ALL messages: user's own + admin replies
+   Properly styled: user right, admin left
+══════════════════════════════════ */
+function listenToChat() {
+  if (chatListener) chatListener();
+
+  const body = document.getElementById('chatBody');
+  body.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i></div>`;
+
+  /* NOTE: This query needs a Firestore composite index on (threadId ASC, createdAt ASC).
+     If the index is missing Firebase returns an error with a link to create it.
+     We handle that gracefully by falling back to a simple query + client-side sort. */
+  // Try threadId first, then userId as fallback
+  const startQuery = () => db.collection('support_messages')
+    .where('userId', '==', currentUser.uid)
+    .orderBy('createdAt', 'asc');
+
+  const fallbackQuery = () => db.collection('support_messages')
+    .where('userId', '==', currentUser.uid);
+
+  function attachListener(query) {
+    return query.onSnapshot((snap) => {
+      /* Sort client-side in case we used the fallback query */
+      const docs = snap.docs.slice().sort((a, b) => {
+        const ta = a.data().createdAt?.toMillis() || 0;
+        const tb = b.data().createdAt?.toMillis() || 0;
+        return ta - tb;
+      });
+
+      body.innerHTML = '';
+
+      if (docs.length === 0) {
+        body.innerHTML = `
+          <div class="msg-wrap">
+            <div class="msg-mini-av admin">🎧</div>
+            <div class="msg-inner">
+              <div class="msg-sender">Cashpoint Support</div>
+              <div class="msg-bubble admin">
+                👋 Hello! Welcome to Cashpoint Support.<br><br>
+                How can we help you today? Feel free to ask about your account, investments, deposits, or withdrawals!
+              </div>
+              <div class="msg-time">Support Team</div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      let lastDateStr = '';
+
+      docs.forEach(doc => {
+        const m      = doc.data();
+        const isUser = m.sender === 'user';
+        const initial = isUser
+          ? (userData.fullName || userData.username || 'U').charAt(0).toUpperCase()
+          : '🎧';
+
+        /* ── Date separator ── */
+        let dateStr = '';
+        if (m.createdAt) {
+          try {
+            const d    = m.createdAt.toDate();
+            const now  = new Date();
+            const diff = now - d;
+            if (diff < 86400000)       dateStr = 'Today';
+            else if (diff < 172800000) dateStr = 'Yesterday';
+            else dateStr = d.toLocaleDateString('en-NG', {
+              weekday:'long', day:'2-digit', month:'short', year:'numeric'
+            });
+          } catch(e) {}
+        }
+        if (dateStr && dateStr !== lastDateStr) {
+          lastDateStr = dateStr;
+          const sep = document.createElement('div');
+          sep.className = 'chat-date-sep';
+          sep.textContent = dateStr;
+          body.appendChild(sep);
+        }
+
+        /* ── Time string ── */
+        let timeStr = '';
+        if (m.createdAt) {
+          try {
+            timeStr = m.createdAt.toDate().toLocaleTimeString([], {
+              hour: '2-digit', minute: '2-digit'
+            });
+          } catch(e) {}
+        }
+
+        /* ── Build message row ── */
+        const wrap = document.createElement('div');
+        wrap.className = 'msg-wrap' + (isUser ? ' user' : '');
+        wrap.innerHTML = `
+          <div class="msg-mini-av ${m.sender}">${initial}</div>
+          <div class="msg-inner">
+            <div class="msg-sender">${isUser ? 'You' : '🎧 Support'}</div>
+            <div class="msg-bubble ${m.sender}">${escapeHtml(m.message)}</div>
+            <div class="msg-time">${timeStr}</div>
+          </div>`;
+        body.appendChild(wrap);
+      });
+
+      /* ── Mark admin messages as read ── */
+      docs.forEach(doc => {
+        if (doc.data().sender === 'admin' && !doc.data().read) {
+          doc.ref.update({ read: true }).catch(() => {});
+        }
+      });
+
+      scrollChatBottom();
+
+    }, (err) => {
+      console.error('Chat listener error:', err.code, err.message);
+      if (err.code === 'failed-precondition' || err.message?.includes('index')) {
+        /* Composite index missing — retry with simple query, sort client-side */
+        console.warn('Chat: composite index missing, retrying with fallback query');
+        if (chatListener) chatListener();
+        chatListener = attachListener(fallbackQuery());
+      } else {
+        body.innerHTML = `
+          <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">
+            Could not load messages.<br>
+            <span style="font-size:11px;">${escapeHtml(err.message||'')}</span>
+          </div>`;
+      }
+    });
+  }
+
+  chatListener = attachListener(startQuery());
+}
+
+function renderMessage() {} /* kept for compatibility */
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>');
+}
+
+function scrollChatBottom() {
+  const body = document.getElementById('chatBody');
+  body.scrollTop = body.scrollHeight;
+}
+
+/* Send a user message */
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const btn   = document.getElementById('sendBtn');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  btn.disabled = true;
+
+  try {
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+    const userName = userData.fullName || userData.username || 'User';
+
+    /* Add message document */
+    await db.collection('support_messages').add({
+      threadId:  currentUser.uid,
+      userId:    currentUser.uid,
+      userName,
+      message:   text,
+      sender:    'user',
+      createdAt: now,
+      read:      false
+    });
+
+    /* Upsert thread metadata (admin panel uses this) */
+    await db.collection('support_threads').doc(currentUser.uid).set({
+      userId:        currentUser.uid,
+      userName,
+      userEmail:     userData.email || currentUser.email || '',
+      lastMessage:   text,
+      lastMessageAt: now,
+      unreadByAdmin: firebase.firestore.FieldValue.increment(1),
+      status:        'open',
+      updatedAt:     now
+    }, { merge: true });
+
+  } catch(err) {
+    console.error('Send message error:', err);
+    Swal.fire({ icon:'error', title:'Could Not Send', text:'Please check your connection.', confirmButtonColor:'#0052FF' });
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+/* Enter key sends, Shift+Enter = newline */
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+/* Auto-resize textarea */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+/* ── Sign out ── */
+async function signOut() {
+  const result = await Swal.fire({
+    icon:'question', title:'Sign Out?',
+    text:'You will need to log in again.',
+    showCancelButton:true,
+    confirmButtonText:'Yes, Sign Out',
+    cancelButtonText:'Cancel',
+    confirmButtonColor:'#FF4D6D',
+    cancelButtonColor:'#6B7A99'
+  });
+  if (result.isConfirmed) {
+    if (chatListener) chatListener();
+    await auth.signOut();
+    window.location.href = 'login.html';
+  }
+}
+
+</script>
+</body>
+</html>
