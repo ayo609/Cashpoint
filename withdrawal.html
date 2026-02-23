@@ -550,7 +550,7 @@ async function loadPage() {
     /* Check if user has an active investment */
     const invSnap = await db.collection('investments')
       .where('userId', '==', currentUserId)
-      .where('active', '==', true)
+      .where('active', '==', active)
       .limit(1)
       .get();
 
