@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cashpoint | Home</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary:       #0052FF;
+      --primary-light: #3b7dff;
+      --primary-dark:  #0039b3;
+      --accent:        #00D4A0;
+      --accent-dark:   #00a87e;
+      --warning:       #FFB800;
+      --danger:        #FF4D6D;
+      --success:       #00C48C;
+      --bg:            #F0F4FF;
+      --card:          #ffffff;
+      --text:          #0D1B3E;
+      --muted:         #6B7A99;
+      --border:        #D8E0F0;
+      --nav-h:         70px;
+      --bottom-h:      72px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: var(--bottom-h);
+      overflow-x: hidden;
+    }
+
+    /* ════════════════════════════════
+       TOP NAV BAR
+    ════════════════════════════════ */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      height: var(--nav-h);
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      gap: 16px;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar-logo {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .topbar-name {
+      font-family: 'Sora', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topbar-time {
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 500;
+      display: none;
+    }
+    @media(min-width:600px){ .topbar-time { display: block; } }
+
+    .notif-btn {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .notif-btn:hover { background: #e4eaff; }
+    .notif-dot {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 8px; height: 8px;
+      background: var(--danger);
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ════════════════════════════════
+       WELCOME HERO
+    ════════════════════════════════ */
+    .welcome-hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 60%, #001f6e 100%);
+      padding: 36px 24px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-hero::before {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      top: -120px; right: -100px;
+    }
+    .welcome-hero::after {
+      content: '';
+      position: absolute;
+      width: 250px; height: 250px;
+      border-radius: 50%;
+      background: rgba(0,212,160,0.12);
+      bottom: -60px; left: -60px;
+    }
+    .welcome-greeting {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.65);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .welcome-name {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(24px, 6vw, 34px);
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .welcome-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      font-weight: 500;
+      margin-bottom: 28px;
+    }
+    .welcome-sub .accent-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); opacity:1; }
+      50%      { transform: scale(1.5); opacity:0.6; }
+    }
+
+    /* Quick action chips */
+    .quick-chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: #fff;
+      border-radius: 99px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .chip:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    /* ════════════════════════════════
+       BALANCE CARD (floating)
+    ════════════════════════════════ */
+    .balance-wrapper {
+      padding: 0 16px;
+      margin-top: -56px;
+      position: relative;
+      z-index: 10;
+    }
+    .balance-card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0,82,255,0.14);
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform: translateY(20px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .balance-main {
+      flex: 1;
+      min-width: 140px;
+    }
+    .balance-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
+    }
+    .balance-amount {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(26px, 6vw, 36px);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+    .balance-amount .currency {
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .balance-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #E8FFF6;
+      color: var(--success);
+      border-radius: 99px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .balance-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .bal-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .bal-btn-icon {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: transform 0.2s;
+    }
+    .bal-btn:hover .bal-btn-icon { transform: translateY(-3px); }
+    .bal-btn-icon.deposit  { background: #E8F0FF; color: var(--primary); }
+    .bal-btn-icon.withdraw { background: #FFF0F3; color: var(--danger); }
+    .bal-btn-icon.invest   { background: #E8FFF6; color: var(--success); }
+    .bal-btn span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* ════════════════════════════════
+       STATS ROW
+    ════════════════════════════════ */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 20px 16px 0;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px 14px;
+      box-shadow: 0 4px 16px rgba(0,82,255,0.07);
+      text-align: center;
+      animation: slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .stat-card:nth-child(2) { animation-delay: 0.08s; }
+    .stat-card:nth-child(3) { animation-delay: 0.16s; }
+    .stat-icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: 'Sora', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ════════════════════════════════
+       SECTION TITLES
+    ════════════════════════════════ */
+    .section-wrap {
+      padding: 28px 16px 0;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .section-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .section-link:hover { text-decoration: underline; }
+
+    /* ════════════════════════════════
+       INVESTMENT PLAN CARDS
+    ════════════════════════════════ */
+    .plans-scroll {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .plans-scroll::-webkit-scrollbar { display: none; }
+
+    .plan-card {
+      flex: 0 0 220px;
+      background: white;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,82,255,0.08);
+      scroll-snap-align: start;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+    }
+    .plan-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0,82,255,0.14);
+    }
+    .plan-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .plan-badge.starter  { background: #E8F0FF; color: var(--primary); }
+    .plan-badge.growth   { background: #E8FFF6; color: var(--success); }
+    .plan-badge.premium  { background: #FFF8E8; color: var(--warning); }
+    .plan-badge.elite    { background: #FFF0F3; color: var(--danger); }
+
+    .plan-roi {
+      font-family: 'Sora', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .plan-roi span { font-size: 16px; color: var(--muted); }
+    .plan-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .plan-meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.7;
+    }
+    .plan-invest-btn {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 9px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .plan-invest-btn:hover { background: var(--primary-dark); }
+
+    /* ════════════════════════════════
+       REFERRAL CARD
+    ════════════════════════════════ */
+    .referral-card {
+      background: linear-gradient(135deg, var(--accent) 0%, #00a87e 100%);
+      border-radius: 20px;
+      padding: 22px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 8px 30px rgba(0,212,160,0.25);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .referral-card:hover { transform: translateY(-3px); }
+    .ref-left {}
+    .ref-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .ref-sub {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.8);
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .ref-link-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.22);
+      border: 1.5px solid rgba(255,255,255,0.35);
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+    .ref-link-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .ref-copy-btn {
+      background: white;
+      color: var(--accent-dark);
+      border: none;
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .ref-copy-btn:hover { opacity: 0.85; }
+    .ref-icon {
+      font-size: 48px;
+      flex-shrink: 0;
+    }
+    .ref-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    /* ════════════════════════════════
+       HOW IT WORKS
+    ════════════════════════════════ */
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .how-card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px 14px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,82,255,0.07);
+    }
+    .how-num {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      color: white;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      margin: 0 auto 12px;
+    }
+    .how-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .how-desc {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ════════════════════════════════
+       TESTIMONIALS
+    ════════════════════════════════ */
+    .testimonials-scroll {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .testimonials-scroll::-webkit-scrollbar { display: none; }
+
+    .testi-card {
+      flex: 0 0 260px;
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0,82,255,0.07);
+      scroll-snap-align: start;
+    }
+    .testi-stars {
+      color: var(--warning);
+      font-size: 13px;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+    }
+    .testi-text {
+      font-size: 13.5px;
+      color: var(--text);
+      line-height: 1.6;
+      font-style: italic;
+      margin-bottom: 14px;
+    }
+    .testi-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .testi-avatar {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .testi-info .name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .testi-info .role {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ════════════════════════════════
+       CTA BANNER
+    ════════════════════════════════ */
+    .cta-banner {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 20px;
+      padding: 28px 22px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-banner::before {
+      content:'';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      top: -80px; right: -50px;
+    }
+    .cta-banner h3 {
+      font-family: 'Sora', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+    }
+    .cta-banner p {
+      font-size: 13.5px;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .cta-banner-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cta-banner-btn {
+      padding: 10px 22px;
+      border-radius: 99px;
+      font-size: 13.5px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: transform 0.15s;
+    }
+    .cta-banner-btn:hover { transform: translateY(-2px); }
+    .cta-banner-btn.solid  { background: white; color: var(--primary); }
+    .cta-banner-btn.outline { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.5); }
+
+    /* ════════════════════════════════
+       BOTTOM NAV
+    ════════════════════════════════ */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: var(--bottom-h);
+      background: white;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+      z-index: 999;
+      box-shadow: 0 -4px 24px rgba(0,82,255,0.08);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 14px;
+      transition: background 0.2s;
+      flex: 1;
+      max-width: 72px;
+    }
+    .nav-item:hover { background: var(--bg); }
+    .nav-item i {
+      font-size: 20px;
+      color: var(--muted);
+      transition: color 0.2s, transform 0.2s;
+    }
+    .nav-item span {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .nav-item.active i,
+    .nav-item.active span { color: var(--primary); }
+    .nav-item.active i   { transform: translateY(-2px); }
+
+    .nav-center-btn {
+      width: 50px; height: 50px;
+      border-radius: 16px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 20px rgba(0,82,255,0.35);
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s;
+      margin-bottom: 8px;
+    }
+    .nav-center-btn:hover { transform: translateY(-3px); }
+    .nav-center-btn i { color: white; font-size: 20px; }
+
+    /* ════════════════════════════════
+       SPACER
+    ════════════════════════════════ */
+    .page-end { height: 32px; }
+
+    /* ════════════════════════════════
+       LOADING SKELETON
+    ════════════════════════════════ */
+    .skeleton {
+      background: linear-gradient(90deg, #e8edf5 25%, #f5f7fb 50%, #e8edf5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  
+  /* ══════════ WHATSAPP GROUP MODAL ══════════ */
+  .whatsapp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+  }
+  .whatsapp-modal-overlay.show {
+    display: flex;
+  }
+  .whatsapp-modal {
+    background: white;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .whatsapp-header {
+    background: linear-gradient(135deg, #25D366 0%, #20BA5B 100%);
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+  }
+  .whatsapp-icon {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 40px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+  .whatsapp-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+  }
+  .whatsapp-subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+  }
+  .whatsapp-body {
+    padding: 28px 24px;
+  }
+  .whatsapp-message {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .whatsapp-benefits {
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .benefit-item:last-child {
+    margin-bottom: 0;
+  }
+  .benefit-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--success), var(--accent));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+    font-weight: 800;
+  }
+  .benefit-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .whatsapp-actions {
+    display: flex;
+    gap: 12px;
+  }
+  .whatsapp-btn {
+    flex: 1;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .whatsapp-btn-primary {
+    background: linear-gradient(135deg, #25D366, #20BA5B);
+    color: white;
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+  }
+  .whatsapp-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+  }
+  .whatsapp-btn-secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 2px solid var(--border);
+  }
+  .whatsapp-btn-secondary:hover {
+    background: var(--bg);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  
+  @media (max-width: 480px) {
+    .whatsapp-modal {
+      width: 95%;
+      max-width: none;
+    }
+    .whatsapp-header {
+      padding: 24px 20px;
+    }
+    .whatsapp-icon {
+      width: 70px;
+      height: 70px;
+      font-size: 35px;
+    }
+    .whatsapp-title {
+      font-size: 20px;
+    }
+    .whatsapp-body {
+      padding: 20px;
+    }
+    .whatsapp-actions {
+      flex-direction: column;
+    }
+  }
+
+  /* ══════════ PROMO BANNER ══════════ */
+  .promo-banner-section {
+    padding: 20px 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .promo-banner {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 82, 255, 0.15);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease;
+  }
+  .promo-banner:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 60px rgba(0, 82, 255, 0.25);
+  }
+  .promo-banner img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  @media (max-width: 768px) {
+    .promo-banner-section {
+      padding: 16px 12px;
+    }
+    .promo-banner {
+      border-radius: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ══════════ TOP BAR ══════════ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">💰</div>
+      <span class="topbar-name">Cashpoint</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-time" id="topbarTime">--:--</div>
+      <div class="notif-btn" title="Notifications">
+        🔔
+        <div class="notif-dot"></div>
+      </div>
+      <div class="avatar" id="avatarInitial">?</div>
+    </div>
+  </div>
+
+  <!-- ══════════ WELCOME HERO ══════════ -->
+  <div class="welcome-hero">
+    <div class="welcome-greeting">Good <span id="timeOfDay">day</span></div>
+    <div class="welcome-name" id="welcomeName">Loading...</div>
+    <div class="welcome-sub">
+      <span class="accent-dot"></span>
+      <span id="welcomeSub">Last login: --</span>
+    </div>
+    <div class="quick-chips">
+      <a href="deposit.html"   class="chip"><i class="fas fa-plus-circle"></i> Deposit</a>
+      <a href="withdraw.html"  class="chip"><i class="fas fa-arrow-up"></i> Withdraw</a>
+      <a href="plans.html"     class="chip"><i class="fas fa-chart-line"></i> Invest</a>
+    </div>
+  </div>
+
+  <!-- ══════════ BALANCE CARD ══════════ -->
+  <div class="balance-wrapper">
+    <div class="balance-card">
+      <div class="balance-main">
+        <div class="balance-label">Total Balance</div>
+        <div class="balance-amount">
+          <span class="currency">₦</span><span id="balanceAmt">0.00</span>
+        </div>
+        <div class="balance-change">
+          <i class="fas fa-arrow-up" style="font-size:10px"></i>
+          Active &amp; growing
+        </div>
+      </div>
+      <div class="balance-actions">
+        <a href="deposit.html" class="bal-btn">
+          <div class="bal-btn-icon deposit"><i class="fas fa-plus"></i></div>
+          <span>Deposit</span>
+        </a>
+        <a href="withdraw.html" class="bal-btn">
+          <div class="bal-btn-icon withdraw"><i class="fas fa-arrow-up"></i></div>
+          <span>Withdraw</span>
+        </a>
+        <a href="plans.html" class="bal-btn">
+          <div class="bal-btn-icon invest"><i class="fas fa-chart-line"></i></div>
+          <span>Invest</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════ PROMOTIONAL BANNER ══════════ -->
+  <div class="promo-banner-section">
+    <div class="promo-banner" onclick="window.location.href='plans.html'">
+      <img src="cashpoint-promo-banner.png" alt="Cashpoint Investment Plans - Invest & Earn Big" loading="lazy">
+    </div>
+  </div>
+
+  <!-- ══════════ STATS ROW ══════════ -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">🤝</div>
+      <div class="stat-value" id="statReferrals">0</div>
+      <div class="stat-label">Referrals</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📈</div>
+      <div class="stat-value" id="statInvestments">0</div>
+      <div class="stat-label">Investments</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💎</div>
+      <div class="stat-value" id="statEarnings">₦0</div>
+      <div class="stat-label">Earnings</div>
+    </div>
+  </div>
+
+  <!-- ══════════ INVESTMENT PLANS ══════════ -->
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">Investment Plans</div>
+      <a href="plans.html" class="section-link">View all <i class="fas fa-chevron-right" style="font-size:11px"></i></a>
+    </div>
+    <div class="plans-scroll">
+
+      <a href="plans.html?plan=starter" class="plan-card">
+        <div class="plan-badge starter">Starter</div>
+        <div class="plan-roi">5% <span>/ day</span></div>
+        <div class="plan-name">Starter Plan</div>
+        <div class="plan-meta">
+          Min: ₦5,000<br>
+          Duration: 7 days<br>
+          Total ROI: 35%
+        </div>
+        <div class="plan-invest-btn">Invest Now</div>
+      </a>
+
+      <a href="plans.html?plan=growth" class="plan-card">
+        <div class="plan-badge growth">Growth</div>
+        <div class="plan-roi">8% <span>/ day</span></div>
+        <div class="plan-name">Growth Plan</div>
+        <div class="plan-meta">
+          Min: ₦20,000<br>
+          Duration: 10 days<br>
+          Total ROI: 80%
+        </div>
+        <div class="plan-invest-btn" style="background:var(--success)">Invest Now</div>
+      </a>
+
+      <a href="plans.html?plan=premium" class="plan-card">
+        <div class="plan-badge premium">Premium</div>
+        <div class="plan-roi">12% <span>/ day</span></div>
+        <div class="plan-name">Premium Plan</div>
+        <div class="plan-meta">
+          Min: ₦50,000<br>
+          Duration: 14 days<br>
+          Total ROI: 168%
+        </div>
+        <div class="plan-invest-btn" style="background:var(--warning); color:#333">Invest Now</div>
+      </a>
+
+      <a href="plans.html?plan=elite" class="plan-card">
+        <div class="plan-badge elite">Elite</div>
+        <div class="plan-roi">20% <span>/ day</span></div>
+        <div class="plan-name">Elite Plan</div>
+        <div class="plan-meta">
+          Min: ₦100,000<br>
+          Duration: 21 days<br>
+          Total ROI: 420%
+        </div>
+        <div class="plan-invest-btn" style="background:var(--danger)">Invest Now</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ══════════ REFERRAL CARD ══════════ -->
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">Referral Program</div>
+      <a href="referrals.html" class="section-link">Details <i class="fas fa-chevron-right" style="font-size:11px"></i></a>
+    </div>
+    <div class="referral-card">
+      <div class="ref-left">
+        <div class="ref-title">Invite &amp; Earn</div>
+        <div class="ref-sub">Share your link and earn bonuses for every friend who joins.</div>
+        <div class="ref-link-box">
+          <div class="ref-link-text" id="refLinkText">Loading...</div>
+          <button class="ref-copy-btn" onclick="copyRefLink()">Copy</button>
+        </div>
+        <div class="ref-count">
+          <i class="fas fa-users" style="font-size:12px"></i>
+          <span><b id="refCountBadge">0</b> referrals so far</span>
+        </div>
+      </div>
+      <div class="ref-icon">🎁</div>
+    </div>
+  </div>
+
+  <!-- ══════════ HOW IT WORKS ══════════ -->
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">How It Works</div>
+    </div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">1</div>
+        <div class="how-title">Sign Up</div>
+        <div class="how-desc">Create your free account in minutes.</div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">2</div>
+        <div class="how-title">Deposit</div>
+        <div class="how-desc">Fund your wallet and pick a plan.</div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">3</div>
+        <div class="how-title">Earn Daily</div>
+        <div class="how-desc">Watch your balance grow every day.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TESTIMONIALS ══════════ -->
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">What Members Say</div>
+    </div>
+    <div class="testimonials-scroll">
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"Cashpoint has been a game-changer. The returns are steady and the platform is so easy to use!"</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#0052FF,#00D4A0)">T</div>
+          <div class="testi-info"><div class="name">Tunde A.</div><div class="role">Starter Plan</div></div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"I've earned thousands just from the referral program. This platform is incredible!"</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#FF4D6D,#FFB800)">C</div>
+          <div class="testi-info"><div class="name">Chioma N.</div><div class="role">Growth Plan</div></div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"Finally a platform I can trust. Secure, profitable, and withdrawals are always fast."</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#00C48C,#0052FF)">A</div>
+          <div class="testi-info"><div class="name">Ahmed K.</div><div class="role">Premium Plan</div></div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"My investment doubled in weeks. Best financial decision I've made this year!"</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#FFB800,#FF4D6D)">F</div>
+          <div class="testi-info"><div class="name">Fatima S.</div><div class="role">Elite Plan</div></div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"Transparent, reliable, and rewarding. Cashpoint is now part of my daily routine."</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#0052FF,#FF4D6D)">G</div>
+          <div class="testi-info"><div class="name">Grace M.</div><div class="role">Growth Plan</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ CTA BANNER ══════════ -->
+  <div class="section-wrap">
+    <div class="cta-banner">
+      <h3>Ready to Grow Your Money?</h3>
+      <p>Join thousands of smart investors already building their wealth with Cashpoint.</p>
+      <div class="cta-banner-btns">
+        <a href="plans.html"     class="cta-banner-btn solid">View Plans</a>
+        <a href="dashboard.html" class="cta-banner-btn outline">My Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+
+  <!-- ══════════ BOTTOM NAV ══════════ -->
+  <div class="bottom-nav">
+    <a href="home.html" class="nav-item active">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="plans.html" class="nav-item">
+      <i class="fas fa-chart-line"></i>
+      <span>Plans</span>
+    </a>
+    <a href="investments.html" class="nav-center-btn" title="My Investments">
+      <i class="fas fa-wallet"></i>
+    </a>
+    <a href="referrals.html" class="nav-item">
+      <i class="fas fa-users"></i>
+      <span>Referrals</span>
+    </a>
+    <a href="dashboard.html" class="nav-item">
+      <i class="fas fa-user-circle"></i>
+      <span>Profile</span>
+    </a>
+  </div>
+
+  <script>
+    /* ─── Firebase Init ─── */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+      authDomain: "cashpoint-ac4f4.firebaseapp.com",
+      projectId: "cashpoint-ac4f4",
+      storageBucket: "cashpoint-ac4f4.firebasestorage.app",
+      messagingSenderId: "16133206416",
+      appId: "1:16133206416:web:a093f4e153ad2c9bcc8315"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    let userReferralCode = '';
+
+    /* ─── Live Clock ─── */
+    function updateClock() {
+      const now  = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('topbarTime').textContent = time;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    /* ─── Time of Day Greeting ─── */
+    function getTimeOfDay() {
+      const h = new Date().getHours();
+      if (h < 12) return 'morning';
+      if (h < 17) return 'afternoon';
+      return 'evening';
+    }
+    document.getElementById('timeOfDay').textContent = getTimeOfDay();
+
+    /* ─── Format currency ─── */
+    function formatMoney(n) {
+      return Number(n || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    /* ─── Auth state ─── */
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+
+        if (!doc.exists) {
+          await auth.signOut();
+          window.location.href = 'login.html';
+          return;
+        }
+
+        const data = doc.data();
+
+        /* Welcome message */
+        const firstName = (data.fullName || 'Investor').split(' ')[0];
+        document.getElementById('welcomeName').textContent = `Hello, ${firstName} 👋`;
+        document.getElementById('avatarInitial').textContent = firstName.charAt(0).toUpperCase();
+
+        /* Last login */
+        if (data.lastLogin) {
+          const lastDate = data.lastLogin.toDate();
+          const formatted = lastDate.toLocaleDateString('en-NG', {
+            weekday: 'short', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+          document.getElementById('welcomeSub').textContent = `Last login: ${formatted}`;
+        } else {
+          document.getElementById('welcomeSub').textContent = 'Welcome to Cashpoint!';
+        }
+
+        /* Balance */
+        document.getElementById('balanceAmt').textContent = formatMoney(data.balance);
+
+        // Show WhatsApp group modal every time user logs in
+        showWhatsAppModal();
+
+        /* Stats */
+        document.getElementById('statReferrals').textContent = data.referralCount || 0;
+        document.getElementById('statEarnings').textContent  = '₦' + formatMoney(data.totalEarnings || 0);
+
+        /* Count investments */
+        // OPTIMIZED: Load investments in parallel (don't wait)
+        db.collection('investments')
+          .where('userId', '==', user.uid)
+          .get()
+          .then(invSnap => {
+            document.getElementById('statInvestments').textContent = invSnap.size;
+          })
+          .catch(err => {
+            console.error('Investments load error:', err);
+            document.getElementById('statInvestments').textContent = '0';
+          });
+
+        /* Referral link */
+        userReferralCode = data.referralCode || data.username || user.uid.slice(0, 8);
+        const refLink = `${window.location.origin}/signup.html?ref=${userReferralCode}`;
+        document.getElementById('refLinkText').textContent = refLink;
+        document.getElementById('refCountBadge').textContent = data.referralCount || 0;
+
+        /* Update last login */
+        await db.collection('users').doc(user.uid).update({
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+      } catch (err) {
+        console.error('Home load error:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load your data. Please refresh.',
+          confirmButtonColor: '#0052FF'
+        });
+      }
+    });
+
+    /* ─── Copy Referral Link ─── */
+    function copyRefLink() {
+      const refLink = `${window.location.origin}/signup.html?ref=${userReferralCode}`;
+      navigator.clipboard.writeText(refLink).then(() => {
+        const btn = document.querySelector('.ref-copy-btn');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      }).catch(() => {
+        /* Fallback for older browsers */
+        const ta = document.createElement('textarea');
+        ta.value = refLink;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const btn = document.querySelector('.ref-copy-btn');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       WHATSAPP GROUP MODAL FUNCTIONS
+    ══════════════════════════════════════════════════════════ */
+    function showWhatsAppModal() {
+      // Show modal EVERY TIME user logs in (after 2 seconds)
+      setTimeout(() => {
+        document.getElementById('whatsappModal').classList.add('show');
+      }, 2000);
+    }
+
+    function joinWhatsAppGroup() {
+      // Close modal
+      closeWhatsAppModal();
+      
+      // Open WhatsApp group link in new tab
+      window.open('https://chat.whatsapp.com/KcjNHsyszu3JLZ8UynBjSD', '_blank');
+    }
+
+    function closeWhatsAppModal() {
+      // Close modal with animation
+      const modal = document.getElementById('whatsappModal');
+      modal.style.animation = 'fadeOut 0.3s ease';
+      
+      setTimeout(() => {
+        modal.classList.remove('show');
+        modal.style.animation = '';
+      }, 300);
+    }
+  </script>
+
+
+<!-- WHATSAPP GROUP MODAL -->
+<div class="whatsapp-modal-overlay" id="whatsappModal">
+  <div class="whatsapp-modal">
+    <div class="whatsapp-header">
+      <div class="whatsapp-icon">
+        <i class="fab fa-whatsapp"></i>
+      </div>
+      <div class="whatsapp-title">Join Our Community! 🎉</div>
+      <div class="whatsapp-subtitle">Stay updated with exclusive tips & support</div>
+    </div>
+    <div class="whatsapp-body">
+      <div class="whatsapp-message">
+        Join our exclusive WhatsApp group to get instant updates, investment tips, and 24/7 support from our team!
+      </div>
+      
+      <div class="whatsapp-benefits">
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <div class="benefit-text">Get instant notifications about new investment plans</div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <div class="benefit-text">24/7 support from our dedicated team</div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <div class="benefit-text">Connect with other successful investors</div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <div class="benefit-text">Exclusive tips and strategies to maximize earnings</div>
+        </div>
+      </div>
+      
+      <div class="whatsapp-actions">
+        <button class="whatsapp-btn whatsapp-btn-primary" onclick="joinWhatsAppGroup()">
+          <i class="fab fa-whatsapp"></i>
+          Join Group Now
+        </button>
+        <button class="whatsapp-btn whatsapp-btn-secondary" onclick="closeWhatsAppModal()">
+          Maybe Later
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
