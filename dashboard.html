@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cashpoint | Dashboard</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Chart.js for beautiful analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary:       #0052FF;
+    --primary-light: #3b7dff;
+    --primary-dark:  #0039b3;
+    --accent:        #00D4A0;
+    --accent-dark:   #00a87e;
+    --warning:       #FFB800;
+    --danger:        #FF4D6D;
+    --success:       #00C48C;
+    --bg:            #F0F4FF;
+    --card:          #ffffff;
+    --text:          #0D1B3E;
+    --muted:         #6B7A99;
+    --border:        #D8E0F0;
+    --nav-h:         70px;
+    --bottom-h:      72px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: calc(var(--bottom-h) + 20px);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ════════════════════════
+     TOP BAR
+  ════════════════════════ */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    height: var(--nav-h);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 12px;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar-logo {
+    width: 38px;
+    height: 38px;
+    background: var(--primary);
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .topbar-brand {
+    font-family: 'Sora', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar-clock {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    display: none;
+  }
+  @media (min-width: 520px) { .topbar-clock { display: block; } }
+
+  .notif-btn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .notif-btn:hover { background: #dde6ff; }
+  .notif-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: var(--danger);
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  .user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 15px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  /* ════════════════════════
+     HERO BANNER
+  ════════════════════════ */
+  .hero {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 55%, #001c6b 100%);
+    padding: 30px 22px 96px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 380px;
+    height: 380px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    top: -110px;
+    right: -90px;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(0, 212, 160, 0.1);
+    bottom: -70px;
+    left: -50px;
+  }
+  .hero-tag {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .hero-greeting {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(22px, 5.5vw, 30px);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-sub-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+  }
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: livePulse 2s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.5); opacity: 0.55; }
+  }
+
+  /* ════════════════════════
+     FLOATING BALANCE CARD
+  ════════════════════════ */
+  .balance-outer {
+    padding: 0 16px;
+    margin-top: -58px;
+    position: relative;
+    z-index: 10;
+  }
+  .balance-card {
+    background: white;
+    border-radius: 22px;
+    box-shadow: 0 14px 44px rgba(0, 82, 255, 0.15);
+    padding: 22px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    animation: riseUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes riseUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .bal-info { flex: 1; min-width: 130px; }
+  .bal-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .bal-figure {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(26px, 7vw, 36px);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .bal-figure .sym {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  .bal-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #E8FFF6;
+    color: var(--success);
+    border-radius: 99px;
+    padding: 4px 11px;
+    font-size: 11.5px;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+  .bal-actions {
+    display: flex;
+    gap: 12px;
+  }
+  .bal-act {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .bal-act-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .bal-act:hover .bal-act-icon { transform: translateY(-3px); }
+  .bal-act-icon.dep  { background: #E8F0FF; color: var(--primary); }
+  .bal-act-icon.with { background: #FFF0F3; color: var(--danger); }
+  .bal-act-icon.inv  { background: #E8FFF6; color: var(--success); }
+  .bal-act span {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+
+  /* ════════════════════════
+     STATS ROW
+  ════════════════════════ */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 20px 16px 0;
+  }
+  @media (min-width: 480px) {
+    .stats-row { grid-template-columns: repeat(4, 1fr); }
+  }
+  .stat-tile {
+    background: white;
+    border-radius: 16px;
+    padding: 16px 14px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 82, 255, 0.07);
+    animation: riseUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .stat-tile:nth-child(2) { animation-delay: 0.07s; }
+  .stat-tile:nth-child(3) { animation-delay: 0.14s; }
+  .stat-tile:nth-child(4) { animation-delay: 0.21s; }
+  .stat-tile-icon { font-size: 22px; margin-bottom: 8px; }
+  .stat-tile-val {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-tile-lbl {
+    font-size: 10.5px;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 3px;
+  }
+
+  /* ════════════════════════
+     SECTION HELPERS
+  ════════════════════════ */
+  .section {
+    padding: 26px 16px 0;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .section-more {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .section-more:hover { text-decoration: underline; }
+
+  /* ════════════════════════
+     QUICK ACTION TILES
+  ════════════════════════ */
+  .actions-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 380px) {
+    .actions-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  .action-tile {
+    background: white;
+    border-radius: 16px;
+    padding: 16px 10px;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(0, 82, 255, 0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .action-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(0, 82, 255, 0.14);
+  }
+  .act-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .act-icon.c1 { background: #E8F0FF; }
+  .act-icon.c2 { background: #FFF0F3; }
+  .act-icon.c3 { background: #E8FFF6; }
+  .act-icon.c4 { background: #FFF8E8; }
+  .act-icon.c5 { background: #F3E8FF; }
+  .act-icon.c6 { background: #E8F9FF; }
+  .action-tile span {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* ════════════════════════
+     INVESTMENT CARDS
+  ════════════════════════ */
+  .inv-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .inv-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 82, 255, 0.08);
+    animation: riseUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transition: box-shadow 0.2s;
+  }
+  .inv-card:hover { box-shadow: 0 10px 32px rgba(0, 82, 255, 0.14); }
+
+  /* Card top row */
+  .inv-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .inv-plan-name {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 5px;
+  }
+  .inv-badge {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .b-starter { background: #E8F0FF; color: var(--primary); }
+  .b-growth  { background: #E8FFF6; color: var(--success); }
+  .b-premium { background: #FFF8E8; color: var(--warning); }
+  .b-elite   { background: #FFF0F3; color: var(--danger); }
+  .b-default { background: var(--bg); color: var(--muted); }
+
+  .inv-active-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #E8FFF6;
+    color: var(--success);
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .inv-active-tag .pulse-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: livePulse 1.6s ease-in-out infinite;
+  }
+
+  /* Details grid */
+  .inv-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .inv-det {
+    background: var(--bg);
+    border-radius: 11px;
+    padding: 10px 12px;
+  }
+  .inv-det .d-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 3px;
+  }
+  .inv-det .d-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .inv-det .d-val.green { color: var(--success); }
+
+  /* Progress bar */
+  .prog-wrap { margin-bottom: 14px; }
+  .prog-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 7px;
+  }
+  .prog-track {
+    background: var(--border);
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .prog-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transition: width 0.7s ease;
+  }
+
+  /* Countdown */
+  .countdown-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+  }
+  .cd-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cd-timer {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1.5px;
+  }
+  .cd-timer.ready {
+    color: var(--success);
+    letter-spacing: 0;
+  }
+
+  /* Earned row */
+  .inv-earned-row {
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--success);
+    background: #E8FFF6;
+    border-radius: 10px;
+    padding: 9px;
+  }
+
+  /* ════════════════════════
+     ANALYTICS CARD
+  ════════════════════════ */
+  .analytics-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 82, 255, 0.08);
+    margin-top: 20px;
+  }
+  .analytics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .analytics-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .analytics-badge {
+    background: var(--bg);
+    color: var(--primary);
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .chart-container {
+    position: relative;
+    height: 200px;
+    width: 100%;
+  }
+
+  /* ════════════════════════
+     REFERRAL BANNER CARD
+  ════════════════════════ */
+  .ref-card {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    border-radius: 20px;
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 8px 28px rgba(0, 212, 160, 0.28);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .ref-card:hover { transform: translateY(-3px); }
+  .ref-card-left {}
+  .ref-card-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .ref-card-sub {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .ref-link-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    border-radius: 10px;
+    padding: 9px 12px;
+  }
+  .ref-link-txt {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 185px;
+  }
+  .ref-copy-btn {
+    background: white;
+    color: var(--accent-dark);
+    border: none;
+    border-radius: 7px;
+    padding: 5px 11px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .ref-copy-btn:hover { opacity: 0.85; }
+  .ref-stats-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .ref-stat {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ref-card-emoji {
+    font-size: 52px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  /* ════════════════════════
+     RECENT ACTIVITY
+  ════════════════════════ */
+  .activity-list {
+    background: white;
+    border-radius: 20px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+  .activity-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .activity-details {
+    flex: 1;
+  }
+  .activity-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .activity-time {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .activity-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  /* ════════════════════════
+     EMPTY STATE
+  ════════════════════════ */
+  .empty-box {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 24px;
+    text-align: center;
+    box-shadow: 0 4px 18px rgba(0, 82, 255, 0.07);
+  }
+  .empty-emoji { font-size: 54px; margin-bottom: 14px; }
+  .empty-heading {
+    font-family: 'Sora', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .empty-body {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+  .empty-cta {
+    display: inline-block;
+    padding: 12px 30px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 99px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgba(0, 82, 255, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .empty-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 82, 255, 0.38);
+  }
+
+  /* ════════════════════════
+     SIGN OUT BUTTON
+  ════════════════════════ */
+  .signout-section {
+    padding: 22px 16px 0;
+  }
+  .signout-btn {
+    width: 100%;
+    padding: 15px;
+    background: white;
+    color: var(--danger);
+    border: 1.5px solid #ffd0d8;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .signout-btn:hover {
+    background: #FFF0F3;
+    transform: translateY(-1px);
+  }
+
+  /* ════════════════════════
+     BOTTOM NAVIGATION
+  ════════════════════════ */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--bottom-h);
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 999;
+    box-shadow: 0 -4px 24px rgba(0, 82, 255, 0.09);
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 14px;
+    flex: 1;
+    max-width: 74px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: var(--bg); }
+  .nav-item i {
+    font-size: 20px;
+    color: var(--muted);
+    transition: color 0.2s, transform 0.2s;
+  }
+  .nav-item span {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .nav-item.active i,
+  .nav-item.active span { color: var(--primary); }
+  .nav-item.active i    { transform: translateY(-2px); }
+
+  .nav-center {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 22px rgba(0, 82, 255, 0.38);
+    text-decoration: none;
+    transition: transform 0.2s;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .nav-center:hover { transform: translateY(-3px); }
+  .nav-center i { color: white; font-size: 21px; }
+
+  /* ════════════════════════
+     SHIMMER SKELETON
+  ════════════════════════ */
+  .skeleton {
+    background: linear-gradient(90deg, #e8edf5 25%, #f4f7fc 50%, #e8edf5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 9px;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .page-bottom { height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ TOP BAR ══════════ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">💰</div>
+    <span class="topbar-brand">Dashboard</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-clock" id="topClock">--:--</span>
+    <div class="notif-btn" title="Notifications" onclick="showNotifications()">
+      🔔
+      <div class="notif-dot" id="notificationDot" style="display: none;"></div>
+    </div>
+    <div class="user-avatar" id="avatarBox" onclick="window.location.href='profile.html'">?</div>
+  </div>
+</div>
+
+<!-- ══════════ HERO ══════════ -->
+<div class="hero">
+  <div class="hero-tag">My Dashboard</div>
+  <div class="hero-greeting" id="heroGreeting">Loading...</div>
+  <div class="hero-sub-row">
+    <div class="live-dot"></div>
+    <span id="heroLastLogin">Fetching account data...</span>
+  </div>
+</div>
+
+<!-- ══════════ BALANCE CARD ══════════ -->
+<div class="balance-outer">
+  <div class="balance-card">
+    <div class="bal-info">
+      <div class="bal-label">Available Balance</div>
+      <div class="bal-figure">
+        <span class="sym">₦</span><span id="balanceValue">0.00</span>
+      </div>
+      <div class="bal-pill">
+        <i class="fas fa-circle" style="font-size:7px;"></i>
+        Account Active
+      </div>
+    </div>
+    <div class="bal-actions">
+      <a href="deposit.html" class="bal-act">
+        <div class="bal-act-icon dep"><i class="fas fa-plus"></i></div>
+        <span>Deposit</span>
+      </a>
+      <a href="withdrawal.html" class="bal-act">
+        <div class="bal-act-icon with"><i class="fas fa-arrow-up"></i></div>
+        <span>Withdraw</span>
+      </a>
+      <a href="plans.html" class="bal-act">
+        <div class="bal-act-icon inv"><i class="fas fa-chart-line"></i></div>
+        <span>Invest</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STATS ROW ══════════ -->
+<div class="stats-row">
+  <div class="stat-tile">
+    <div class="stat-tile-icon">💰</div>
+    <div class="stat-tile-val" id="statTotalInvested">₦0</div>
+    <div class="stat-tile-lbl">Invested</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-icon">📈</div>
+    <div class="stat-tile-val" id="statTotalEarnings">₦0</div>
+    <div class="stat-tile-lbl">Earnings</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-icon">🔄</div>
+    <div class="stat-tile-val" id="statActivePlans">0</div>
+    <div class="stat-tile-lbl">Active Plans</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-icon">🤝</div>
+    <div class="stat-tile-val" id="statReferrals">0</div>
+    <div class="stat-tile-lbl">Referrals</div>
+  </div>
+</div>
+
+<!-- ══════════ QUICK ACTIONS ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Quick Actions</div>
+  </div>
+  <div class="actions-row">
+    <a href="deposit.html" class="action-tile">
+      <div class="act-icon c1">💳</div>
+      <span>Deposit</span>
+    </a>
+    <a href="withdrawal.html" class="action-tile">
+      <div class="act-icon c2">🏦</div>
+      <span>Withdraw</span>
+    </a>
+    <a href="plans.html" class="action-tile">
+      <div class="act-icon c3">📊</div>
+      <span>Invest</span>
+    </a>
+    <a href="referrals.html" class="action-tile">
+      <div class="act-icon c4">🎁</div>
+      <span>Referrals</span>
+    </a>
+    <a href="transactions.html" class="action-tile">
+      <div class="act-icon c5">📋</div>
+      <span>History</span>
+    </a>
+    <a href="profile.html" class="action-tile">
+      <div class="act-icon c6">👤</div>
+      <span>Profile</span>
+    </a>
+  </div>
+</div>
+
+<!-- ══════════ REFERRAL CARD ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Referral Program</div>
+    <a href="referrals.html" class="section-more">
+      View all <i class="fas fa-chevron-right" style="font-size:11px;"></i>
+    </a>
+  </div>
+  <div class="ref-card" onclick="window.location.href='referrals.html'">
+    <div class="ref-card-left">
+      <div class="ref-card-title">Invite &amp; Earn Rewards</div>
+      <div class="ref-card-sub">
+        Share your link and earn up to 25% bonus<br>for every friend who joins and invests.
+      </div>
+      <div class="ref-link-row" onclick="event.stopPropagation()">
+        <div class="ref-link-txt" id="refLinkDisplay">Generating link...</div>
+        <button class="ref-copy-btn" id="refCopyBtn" onclick="copyReferralLink()">Copy</button>
+      </div>
+      <div class="ref-stats-row">
+        <div class="ref-stat">
+          <i class="fas fa-users" style="font-size:11px;"></i>
+          <span id="refCountText">0 referrals</span>
+        </div>
+        <div class="ref-stat">
+          <i class="fas fa-coins" style="font-size:11px;"></i>
+          <span id="refEarningsText">₦0 earned</span>
+        </div>
+      </div>
+    </div>
+    <div class="ref-card-emoji">🎁</div>
+  </div>
+</div>
+
+<!-- ══════════ ANALYTICS CHART ══════════ -->
+<div class="section">
+  <div class="analytics-card">
+    <div class="analytics-header">
+      <div class="analytics-title">Earnings Overview</div>
+      <div class="analytics-badge">Last 7 days</div>
+    </div>
+    <div class="chart-container">
+      <canvas id="earningsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ACTIVE INVESTMENTS ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Active Investments</div>
+    <a href="investments.html" class="section-more">
+      See all <i class="fas fa-chevron-right" style="font-size:11px;"></i>
+    </a>
+  </div>
+  <div class="inv-stack" id="investmentStack">
+    <!-- Loading skeleton -->
+    <div class="inv-card">
+      <div class="skeleton" style="height:18px; width:55%; margin-bottom:14px;"></div>
+      <div class="skeleton" style="height:12px; width:100%; margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:12px; width:75%; margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:8px; width:100%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RECENT ACTIVITY ══════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Recent Activity</div>
+    <a href="transactions.html" class="section-more">
+      View all <i class="fas fa-chevron-right" style="font-size:11px;"></i>
+    </a>
+  </div>
+  <div class="activity-list" id="activityList">
+    <!-- Loading skeleton -->
+    <div class="skeleton" style="height:60px; margin-bottom:10px;"></div>
+    <div class="skeleton" style="height:60px; margin-bottom:10px;"></div>
+    <div class="skeleton" style="height:60px;"></div>
+  </div>
+</div>
+
+<!-- ══════════ SIGN OUT ══════════ -->
+<div class="signout-section">
+  <button class="signout-btn" onclick="confirmLogout()">
+    <i class="fas fa-sign-out-alt"></i> Sign Out of Cashpoint
+  </button>
+</div>
+
+<div class="page-bottom"></div>
+
+<!-- ══════════ BOTTOM NAV ══════════ -->
+<div class="bottom-nav">
+  <a href="home.html" class="nav-item">
+    <i class="fas fa-home"></i>
+    <span>Home</span>
+  </a>
+  <a href="plans.html" class="nav-item">
+    <i class="fas fa-chart-line"></i>
+    <span>Plans</span>
+  </a>
+  <a href="investments.html" class="nav-center" title="My Investments">
+    <i class="fas fa-wallet"></i>
+  </a>
+  <a href="referrals.html" class="nav-item">
+    <i class="fas fa-users"></i>
+    <span>Referrals</span>
+  </a>
+  <a href="dashboard.html" class="nav-item active">
+    <i class="fas fa-user-circle"></i>
+    <span>Profile</span>
+  </a>
+</div>
+
+<!-- ══════════ JAVASCRIPT ══════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ══════════════════════════════════
+     FIREBASE INITIALISATION
+  ══════════════════════════════════ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyCFwefJ8rxZUDLbDsRHnHdA-28zPs49rlo",
+    authDomain: "cashpoint-ac4f4.firebaseapp.com",
+    projectId: "cashpoint-ac4f4",
+    storageBucket: "cashpoint-ac4f4.firebasestorage.app",
+    messagingSenderId: "16133206416",
+    appId: "1:16133206416:web:a093f4e153ad2c9bcc8315"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const FieldValue = firebase.firestore.FieldValue;
+
+  /* ══════════════════════════════════
+     CONSTANTS
+  ══════════════════════════════════ */
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const REFRESH_INTERVAL = 30000; // 30 seconds
+
+  /* ══════════════════════════════════
+     GLOBAL STATE
+  ══════════════════════════════════ */
+  let currentUserId = null;
+  let userData = null;
+  let userReferralCode = '';
+  let countdownTimers = [];
+  let dashboardRefresh = null;
+  let earningsChart = null;
+  let allInvestments = [];
+
+  /* ══════════════════════════════════
+     LIVE CLOCK
+  ══════════════════════════════════ */
+  function tickClock() {
+    const now = new Date();
+    document.getElementById('topClock').textContent =
+      now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  /* ══════════════════════════════════
+     MONEY FORMATTERS
+  ══════════════════════════════════ */
+  function formatFull(amount) {
+    return Number(amount || 0).toLocaleString('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function formatShort(amount) {
+    const v = Number(amount || 0);
+    if (v >= 1_000_000) return '₦' + (v / 1_000_000).toFixed(2) + 'M';
+    if (v >= 1_000) return '₦' + (v / 1_000).toFixed(1) + 'K';
+    return '₦' + v.toLocaleString('en-NG', { minimumFractionDigits: 0 });
+  }
+
+  /* ══════════════════════════════════
+     BADGE CLASS FROM PLAN NAME
+  ══════════════════════════════════ */
+  function getPlanBadgeClass(planName) {
+    const n = (planName || '').toLowerCase();
+    if (n.includes('starter')) return 'b-starter';
+    if (n.includes('growth')) return 'b-growth';
+    if (n.includes('premium')) return 'b-premium';
+    if (n.includes('elite')) return 'b-elite';
+    return 'b-default';
+  }
+
+  /* ══════════════════════════════════
+     TIME-OF-DAY GREETING
+  ══════════════════════════════════ */
+  function timeGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  /* ══════════════════════════════════
+     AUTH STATE — ENTRY POINT
+  ══════════════════════════════════ */
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+    currentUserId = user.uid;
+
+    /* Claim any pending referral credits before loading dashboard */
+    await claimPendingReferralCredits(currentUserId);
+
+    await loadDashboard();
+
+    /* Auto-refresh every 30 seconds */
+    if (dashboardRefresh) clearInterval(dashboardRefresh);
+    dashboardRefresh = setInterval(loadDashboard, REFRESH_INTERVAL);
+  });
+
+  /* ══════════════════════════════════
+     MAIN DASHBOARD LOADER
+  ══════════════════════════════════ */
+  async function loadDashboard() {
+    try {
+      /* ── 1. Fetch user document ── */
+      const userSnap = await db.collection('users').doc(currentUserId).get();
+
+      if (!userSnap.exists) {
+        await auth.signOut();
+        window.location.href = 'login.html';
+        return;
+      }
+
+      userData = userSnap.data();
+
+      /* ── 2. Update hero section ── */
+      const firstName = (userData.fullName || userData.username || 'Investor').split(' ')[0];
+      document.getElementById('heroGreeting').textContent =
+        `${timeGreeting()}, ${firstName} 👋`;
+      document.getElementById('avatarBox').textContent =
+        firstName.charAt(0).toUpperCase();
+
+      if (userData.lastLogin) {
+        const d = userData.lastLogin.toDate();
+        const displayDate = d.toLocaleDateString('en-NG', {
+          weekday: 'short', month: 'short',
+          day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        document.getElementById('heroLastLogin').textContent =
+          'Last login: ' + displayDate;
+      } else {
+        document.getElementById('heroLastLogin').textContent =
+          'Welcome to Cashpoint!';
+      }
+
+      /* ── 3. Balance ── */
+      document.getElementById('balanceValue').textContent =
+        formatFull(userData.balance);
+
+      /* ── 4. Stats ── */
+      document.getElementById('statTotalInvested').textContent =
+        formatShort(userData.totalInvested || 0);
+      document.getElementById('statTotalEarnings').textContent =
+        formatShort(userData.totalEarnings || 0);
+      document.getElementById('statReferrals').textContent =
+        userData.referralCount || 0;
+
+      /* ── 5. Referral link ── */
+      userReferralCode =
+        userData.referralCode || userData.username || currentUserId.slice(0, 8);
+      const origin = window.location.origin;
+      const refLink = `${origin}/signup.html?ref=${userReferralCode}`;
+      document.getElementById('refLinkDisplay').textContent = refLink;
+      document.getElementById('refCountText').textContent =
+        `${userData.referralCount || 0} referral${(userData.referralCount || 0) !== 1 ? 's' : ''}`;
+      document.getElementById('refEarningsText').textContent =
+        formatShort(userData.totalRefEarnings || 0);
+
+      /* ── 6. Fetch all investments (both active and completed) ── */
+      const invSnap = await db.collection('investments')
+        .where('userId', '==', currentUserId)
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      allInvestments = invSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      const activeInvestments = allInvestments.filter(inv => inv.status === 'active');
+      document.getElementById('statActivePlans').textContent = activeInvestments.length;
+
+      /* ── 7. Clear old countdown timers before re-render ── */
+      countdownTimers.forEach(id => clearInterval(id));
+      countdownTimers = [];
+
+      /* ── 8. Render active investments ── */
+      await renderActiveInvestments(activeInvestments);
+
+      /* ── 9. Load recent activity ── */
+      await loadRecentActivity();
+
+      /* ── 10. Update earnings chart ── */
+      updateEarningsChart();
+
+      /* ── 11. Check for notifications ── */
+      checkNotifications();
+
+      /* ── 12. Update last login timestamp ── */
+      await db.collection('users').doc(currentUserId).update({
+        lastLogin: FieldValue.serverTimestamp()
+      });
+
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Could Not Load Dashboard',
+        text: 'Please check your internet connection and try again.',
+        confirmButtonColor: '#0052FF',
+        confirmButtonText: 'Retry'
+      }).then(() => window.location.reload());
+    }
+  }
+
+  /* ══════════════════════════════════
+     RENDER ACTIVE INVESTMENTS
+  ══════════════════════════════════ */
+  async function renderActiveInvestments(activeInvestments) {
+    const stack = document.getElementById('investmentStack');
+    stack.innerHTML = '';
+
+    if (activeInvestments.length === 0) {
+      stack.innerHTML = `
+        <div class="empty-box">
+          <div class="empty-emoji">📭</div>
+          <div class="empty-heading">No Active Investments</div>
+          <div class="empty-body">
+            You don't have any active plans yet.<br>
+            Browse our plans and start growing your money today!
+          </div>
+          <a href="plans.html" class="empty-cta">Browse Investment Plans</a>
+        </div>`;
+      return;
+    }
+
+    // Show only first 3 investments on dashboard
+    const displayInvestments = activeInvestments.slice(0, 3);
+
+    for (const inv of displayInvestments) {
+      const card = await buildInvestmentCard(inv);
+      stack.appendChild(card);
+    }
+
+    startCountdownTimers();
+  }
+
+  /* ══════════════════════════════════
+     BUILD INVESTMENT CARD
+  ══════════════════════════════════ */
+  async function buildInvestmentCard(inv) {
+    const now = Date.now();
+    const activation = inv.activationTime ? inv.activationTime.toMillis() : now;
+    const lastROITime = inv.lastROI ? inv.lastROI.toMillis() : activation;
+    const durationDays = inv.durationDays || 30;
+    
+    // Calculate days passed and next ROI
+    const daysPassed = Math.floor((now - activation) / MS_PER_DAY);
+    const cyclesCompleted = Math.floor((now - activation) / MS_PER_DAY);
+    const nextROITime = activation + (cyclesCompleted + 1) * MS_PER_DAY;
+    const daysLeft = Math.max(0, durationDays - daysPassed);
+    const progress = Math.min(((daysPassed / durationDays) * 100), 100).toFixed(1);
+    const totalEarned = (inv.dailyROI || 0) * daysPassed;
+
+    // Check if ROI is due and credit if necessary
+    if (now - lastROITime >= MS_PER_DAY) {
+      await creditROI(inv.id, inv.dailyROI || 0, inv);
+    }
+
+    const card = document.createElement('div');
+    card.className = 'inv-card';
+    card.setAttribute('data-investment-id', inv.id);
+    card.setAttribute('data-next-roi', nextROITime);
+
+    const planName = inv.planName || 'Investment Plan';
+    const badgeCls = getPlanBadgeClass(planName);
+
+    const startStr = new Date(activation).toLocaleDateString('en-NG', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+
+    card.innerHTML = `
+      <div class="inv-top">
+        <div>
+          <div class="inv-plan-name">${planName}</div>
+          <span class="inv-badge ${badgeCls}">${planName}</span>
+        </div>
+        <div class="inv-active-tag">
+          <div class="pulse-dot"></div>
+          Active
+        </div>
+      </div>
+
+      <div class="inv-details">
+        <div class="inv-det">
+          <div class="d-label">Amount</div>
+          <div class="d-val">₦${Number(inv.amount || inv.capital || 0).toLocaleString('en-NG')}</div>
+        </div>
+        <div class="inv-det">
+          <div class="d-label">Daily ROI</div>
+          <div class="d-val green">₦${Number(inv.dailyROI || 0).toLocaleString('en-NG')}</div>
+        </div>
+        <div class="inv-det">
+          <div class="d-label">Progress</div>
+          <div class="d-val">${daysPassed}/${durationDays}</div>
+        </div>
+        <div class="inv-det">
+          <div class="d-label">Started</div>
+          <div class="d-val">${startStr}</div>
+        </div>
+      </div>
+
+      <div class="prog-wrap">
+        <div class="prog-meta">
+          <span>Progress</span>
+          <span>${progress}%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" style="width: ${progress}%;"></div>
+        </div>
+      </div>
+
+      <div class="countdown-box">
+        <div class="cd-label">
+          <i class="fas fa-clock"></i>
+          Next ROI
+        </div>
+        <div class="cd-timer" id="timer_${inv.id}">--:--:--</div>
+      </div>
+
+      <div class="inv-earned-row">
+        💵 Earned: ₦${totalEarned.toLocaleString('en-NG')}
+      </div>
+    `;
+
+    return card;
+  }
+
+  /* ══════════════════════════════════
+     START COUNTDOWN TIMERS
+  ══════════════════════════════════ */
+  function startCountdownTimers() {
+    document.querySelectorAll('.inv-card[data-next-roi]').forEach(card => {
+      const investmentId = card.getAttribute('data-investment-id');
+      const nextROITime = parseInt(card.getAttribute('data-next-roi'));
+
+      if (!investmentId || isNaN(nextROITime)) return;
+
+      const timerEl = document.getElementById(`timer_${investmentId}`);
+      if (!timerEl) return;
+
+      function updateCountdown() {
+        const now = Date.now();
+        const diff = nextROITime - now;
+
+        if (diff <= 0) {
+          timerEl.textContent = '✓ Ready!';
+          timerEl.classList.add('ready');
+        } else {
+          const h = Math.floor(diff / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          timerEl.textContent =
+            String(h).padStart(2, '0') + ':' +
+            String(m).padStart(2, '0') + ':' +
+            String(s).padStart(2, '0');
+          timerEl.classList.remove('ready');
+        }
+      }
+
+      updateCountdown();
+      const timerId = setInterval(updateCountdown, 1000);
+      countdownTimers.push(timerId);
+    });
+  }
+
+  /* ══════════════════════════════════
+     LOAD RECENT ACTIVITY
+  ══════════════════════════════════ */
+  async function loadRecentActivity() {
+    try {
+      const txSnap = await db.collection('transactions')
+        .where('userId', '==', currentUserId)
+        .orderBy('createdAt', 'desc')
+        .limit(5)
+        .get();
+
+      const activityList = document.getElementById('activityList');
+      
+      if (txSnap.empty) {
+        activityList.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--muted);">
+            No recent activity
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      txSnap.docs.forEach(doc => {
+        const tx = doc.data();
+        const date = tx.createdAt?.toDate() || new Date();
+        const timeStr = date.toLocaleDateString('en-NG', {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        let icon = '💰';
+        let iconClass = 'c1';
+        if (tx.type === 'investment_purchase') {
+          icon = '📈';
+          iconClass = 'c3';
+        } else if (tx.type === 'referral_bonus') {
+          icon = '🎁';
+          iconClass = 'c4';
+        } else if (tx.type === 'withdrawal') {
+          icon = '💸';
+          iconClass = 'c2';
+        }
+
+        html += `
+          <div class="activity-item">
+            <div class="activity-icon ${iconClass}">${icon}</div>
+            <div class="activity-details">
+              <div class="activity-title">${tx.note || tx.type}</div>
+              <div class="activity-time">${timeStr}</div>
+            </div>
+            <div class="activity-amount ${tx.type.includes('purchase') ? '' : 'green'}">
+              ${tx.type.includes('purchase') ? '-' : '+'}₦${formatFull(tx.amount)}
+            </div>
+          </div>
+        `;
+      });
+
+      activityList.innerHTML = html;
+    } catch (err) {
+      console.error('Error loading activity:', err);
+    }
+  }
+
+  /* ══════════════════════════════════
+     UPDATE EARNINGS CHART
+  ══════════════════════════════════ */
+  function updateEarningsChart() {
+    const ctx = document.getElementById('earningsChart')?.getContext('2d');
+    if (!ctx) return;
+
+    // Generate last 7 days
+    const labels = [];
+    const data = [];
+    const today = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('en-NG', { weekday: 'short' }));
+      
+      // Simulate some data - in production, fetch from ROI logs
+      data.push(Math.floor(Math.random() * 5000) + 1000);
+    }
+
+    if (earningsChart) {
+      earningsChart.destroy();
+    }
+
+    earningsChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Daily Earnings (₦)',
+          data: data,
+          borderColor: '#0052FF',
+          backgroundColor: 'rgba(0, 82, 255, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#0052FF',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '₦' + context.raw.toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              display: true,
+              color: '#D8E0F0'
+            },
+            ticks: {
+              callback: function(value) {
+                return '₦' + value.toLocaleString();
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /* ══════════════════════════════════
+     CHECK NOTIFICATIONS
+  ══════════════════════════════════ */
+  function checkNotifications() {
+    // Check for unread notifications
+    const hasUnread = false; // Implement based on your notification system
+    document.getElementById('notificationDot').style.display = hasUnread ? 'block' : 'none';
+  }
+
+  /* ══════════════════════════════════
+     CREDIT DAILY ROI
+  ══════════════════════════════════ */
+  async function creditROI(invId, dailyROI, invData) {
+    if (!dailyROI || dailyROI <= 0) return;
+
+    try {
+      await db.runTransaction(async (tx) => {
+        const invRef = db.collection('investments').doc(invId);
+        const userRef = db.collection('users').doc(currentUserId);
+
+        const [freshInv, freshUser] = await Promise.all([
+          tx.get(invRef),
+          tx.get(userRef)
+        ]);
+
+        if (!freshInv.exists || !freshUser.exists) return;
+
+        const iData = freshInv.data();
+        const now = Date.now();
+        const activation = iData.activationTime ? iData.activationTime.toMillis() : now;
+        const daysPassed = Math.floor((now - activation) / MS_PER_DAY);
+        const durationDays = iData.durationDays || 30;
+
+        if (daysPassed >= durationDays) {
+          tx.update(invRef, {
+            status: 'completed',
+            completedAt: FieldValue.serverTimestamp()
+          });
+          return;
+        }
+
+        tx.update(userRef, {
+          balance: FieldValue.increment(dailyROI),
+          totalEarnings: FieldValue.increment(dailyROI)
+        });
+
+        tx.update(invRef, {
+          lastROI: FieldValue.serverTimestamp(),
+          totalEarned: FieldValue.increment(dailyROI)
+        });
+
+        const logRef = db.collection('roi_logs').doc();
+        tx.set(logRef, {
+          userId: currentUserId,
+          invId,
+          planName: iData.planName || '',
+          amount: dailyROI,
+          dayNum: daysPassed,
+          creditedAt: FieldValue.serverTimestamp()
+        });
+      });
+
+      // Refresh balance display
+      const freshUser = await db.collection('users').doc(currentUserId).get();
+      document.getElementById('balanceValue').textContent =
+        formatFull(freshUser.data().balance);
+      document.getElementById('statTotalEarnings').textContent =
+        formatShort(freshUser.data().totalEarnings);
+
+    } catch (e) {
+      console.error('ROI transaction error:', e.message);
+    }
+  }
+
+  /* ══════════════════════════════════
+     COPY REFERRAL LINK
+  ══════════════════════════════════ */
+  window.copyReferralLink = function() {
+    const origin = window.location.origin;
+    const link = `${origin}/signup.html?ref=${userReferralCode}`;
+    const btn = document.getElementById('refCopyBtn');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
+      }).catch(() => fallbackCopy(link, btn));
+    } else {
+      fallbackCopy(link, btn);
+    }
+  };
+
+  function fallbackCopy(text, btn) {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(el);
+    el.select();
+    try {
+      document.execCommand('copy');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
+    } catch (e) {
+      btn.textContent = 'Failed';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
+    }
+    document.body.removeChild(el);
+  }
+
+  /* ══════════════════════════════════
+     SHOW NOTIFICATIONS
+  ══════════════════════════════════ */
+  window.showNotifications = function() {
+    Swal.fire({
+      title: 'Notifications',
+      html: `
+        <div style="text-align: left;">
+          <div style="padding: 10px; border-bottom: 1px solid var(--border);">
+            <strong>✨ New Feature</strong><br>
+            <small style="color: var(--muted);">Check out our new investment plans!</small>
+          </div>
+          <div style="padding: 10px;">
+            <strong>🎁 Referral Bonus</strong><br>
+            <small style="color: var(--muted);">You earned ₦2,500 from referrals</small>
+          </div>
+        </div>
+      `,
+      confirmButtonColor: '#0052FF'
+    });
+  };
+
+  /* ══════════════════════════════════
+     LOGOUT WITH CONFIRMATION
+  ══════════════════════════════════ */
+  window.confirmLogout = function() {
+    Swal.fire({
+      title: 'Sign Out?',
+      text: 'Are you sure you want to sign out of your account?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#FF4D6D',
+      cancelButtonColor: '#0052FF',
+      confirmButtonText: 'Yes, Sign Out',
+      cancelButtonText: 'Stay Logged In',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (dashboardRefresh) clearInterval(dashboardRefresh);
+        countdownTimers.forEach(id => clearInterval(id));
+        auth.signOut().then(() => {
+          window.location.href = 'login.html';
+        }).catch((err) => {
+          Swal.fire('Error', 'Could not sign out: ' + err.message, 'error');
+        });
+      }
+    });
+  };
+
+  /* ══════════════════════════════════
+     CLAIM PENDING REFERRAL CREDITS
+  ══════════════════════════════════ */
+  async function claimPendingReferralCredits(userUid) {
+    if (!userUid) return 0;
+
+    try {
+      const snap = await db.collection('referral_credits')
+        .where('uplineUid', '==', userUid)
+        .where('claimed', '==', false)
+        .get();
+
+      if (snap.empty) return 0;
+
+      console.log(`[Credits] ${snap.size} unclaimed referral credit(s) found`);
+
+      let total = 0;
+      const batch = db.batch();
+
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        const bonus = Number(data.bonusAmount || 0);
+        if (bonus <= 0) return;
+
+        batch.update(db.collection('users').doc(userUid), {
+          balance: FieldValue.increment(bonus),
+          totalEarnings: FieldValue.increment(bonus),
+          totalRefEarnings: FieldValue.increment(bonus)
+        });
+
+        batch.update(doc.ref, {
+          claimed: true,
+          claimedAt: FieldValue.serverTimestamp()
+        });
+
+        total += bonus;
+      });
+
+      await batch.commit();
+      console.log(`[Credits] ✅ Claimed ₦${total} in referral credits`);
+
+      if (total > 0) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Referral Credits Claimed!',
+          text: `₦${formatFull(total)} has been added to your balance.`,
+          toast: true,
+          position: 'top-end',
+          timer: 4000,
+          showConfirmButton: false
+        });
+      }
+
+      return total;
+    } catch (e) {
+      console.warn('[Credits] Claim error:', e.code, e.message);
+      return 0;
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
